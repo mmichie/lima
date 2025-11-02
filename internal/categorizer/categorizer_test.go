@@ -297,7 +297,10 @@ func TestCategorizer_SuggestAll(t *testing.T) {
 }
 
 func TestCategorizer_Feedback(t *testing.T) {
-	c, err := New(nil)
+	cfg := config.DefaultConfig()
+	cfg.Categorization.LearnFromEdits = false // Disable learning for this test
+
+	c, err := New(cfg)
 	if err != nil {
 		t.Fatalf("Failed to create categorizer: %v", err)
 	}

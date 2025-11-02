@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	fmt.Println("=== Lima Categorization Engine Demo ===\n")
+	fmt.Println("=== Lima Categorization Engine Demo ===")
 
 	// Create a config with the patterns file
 	cfg := config.DefaultConfig()
@@ -27,7 +27,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Loaded %d patterns\n\n", cat.PatternCount())
+	fmt.Printf("Loaded %d patterns\n", cat.PatternCount())
+	fmt.Println()
 
 	// Test transactions
 	testTransactions := []struct {
@@ -46,7 +47,8 @@ func main() {
 		{"SHELL OIL", "Gas for car"},
 	}
 
-	fmt.Println("Testing categorization suggestions:\n")
+	fmt.Println("Testing categorization suggestions:")
+	fmt.Println()
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 	for i, tt := range testTransactions {
@@ -93,7 +95,9 @@ func main() {
 	fmt.Println("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 	// Demonstrate feedback
-	fmt.Println("\n=== Testing Feedback System ===\n")
+	fmt.Println()
+	fmt.Println("=== Testing Feedback System ===")
+	fmt.Println()
 
 	tx := &beancount.Transaction{
 		Date:      time.Now(),
@@ -121,8 +125,11 @@ func main() {
 	}
 
 	// Show all patterns with statistics
-	fmt.Println("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-	fmt.Println("\n=== Pattern Statistics Summary ===\n")
+	fmt.Println()
+	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+	fmt.Println()
+	fmt.Println("=== Pattern Statistics Summary ===")
+	fmt.Println()
 
 	patterns := cat.GetPatterns()
 	matchedPatterns := 0
