@@ -15,6 +15,9 @@ var (
 	// Date format: YYYY-MM-DD
 	dateRegex = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}`)
 
+	// Include directive: include "filename"
+	includeRegex = regexp.MustCompile(`^\s*include\s+"([^"]+)"`)
+
 	// Transaction line: DATE FLAG ["PAYEE"] "NARRATION" [TAGS] [LINKS]
 	// Examples:
 	//   2025-01-01 * "Payee" "Narration"

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -141,35 +142,76 @@ func (f *File) GetCommodities() []string {
 
 // buildIndex scans the entire file and builds an index of all directives
 func (f *File) buildIndex() error {
-	// Reset file to beginning
-	if _, err := f.file.Seek(0, 0); err != nil {
-		return err
-	}
-
-	scanner := bufio.NewScanner(f.file)
-	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024) // 1MB max line size
-
 	f.index = &Index{
 		transactions: make([]TransactionIndex, 0),
 		accounts:     make([]string, 0),
 		commodities:  make([]string, 0),
 	}
 
-	var position int64
-	lineNumber := 0
 	accountSet := make(map[string]bool)
 	commoditySet := make(map[string]bool)
+	includedFiles := make(map[string]bool)
+
+	// Process the main file and all includes recursively
+	if err := f.processFile(f.path, accountSet, commoditySet, includedFiles); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// processFile recursively processes a file and all its includes
+func (f *File) processFile(filePath string, accountSet, commoditySet map[string]bool, includedFiles map[string]bool) error {
+	// Check if already included to avoid infinite loops
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path for %s: %w", filePath, err)
+	}
+
+	if includedFiles[absPath] {
+		return nil // Already processed
+	}
+	includedFiles[absPath] = true
+
+	// Open the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to open file %s: %w", filePath, err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024) // 1MB max line size
+
+	var position int64
+	lineNumber := 0
+	baseDir := filepath.Dir(filePath)
 
 	for scanner.Scan() {
 		lineNumber++
 		line := scanner.Text()
+
+		// Check for include directive
+		if matches := includeRegex.FindStringSubmatch(line); matches != nil {
+			includePath := matches[1]
+			// Resolve relative paths
+			if !filepath.IsAbs(includePath) {
+				includePath = filepath.Join(baseDir, includePath)
+			}
+			// Recursively process included file
+			if err := f.processFile(includePath, accountSet, commoditySet, includedFiles); err != nil {
+				return fmt.Errorf("error processing include %s: %w", includePath, err)
+			}
+			position += int64(len(scanner.Bytes()) + 1)
+			continue
+		}
 
 		// Try to parse as transaction start
 		if txIndex := parseTransactionIndexLine(line, position, lineNumber); txIndex != nil {
 			f.index.transactions = append(f.index.transactions, *txIndex)
 		}
 
-		// Extract accounts and commodities (simple extraction for now)
+		// Extract accounts and commodities
 		accounts, commodities := extractAccountsAndCommodities(line)
 		for _, acc := range accounts {
 			if !accountSet[acc] {
@@ -188,7 +230,7 @@ func (f *File) buildIndex() error {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("error scanning file: %w", err)
+		return fmt.Errorf("error scanning file %s: %w", filePath, err)
 	}
 
 	return nil
