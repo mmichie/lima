@@ -27,7 +27,8 @@ type Index struct {
 type TransactionIndex struct {
 	Date         time.Time
 	Payee        string
-	FilePosition int64
+	FilePath     string // Path to the file containing this transaction
+	FilePosition int64  // Position within that file
 	LineNumber   int
 }
 
@@ -89,7 +90,7 @@ func (f *File) GetTransaction(index int) (*Transaction, error) {
 
 	// Not in cache - load from file
 	txIndex := f.index.transactions[index]
-	tx, err := f.parseTransactionAt(txIndex.FilePosition, txIndex.LineNumber)
+	tx, err := f.parseTransactionAt(txIndex.FilePath, txIndex.FilePosition, txIndex.LineNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse transaction at index %d: %w", index, err)
 	}
@@ -207,7 +208,7 @@ func (f *File) processFile(filePath string, accountSet, commoditySet map[string]
 		}
 
 		// Try to parse as transaction start
-		if txIndex := parseTransactionIndexLine(line, position, lineNumber); txIndex != nil {
+		if txIndex := parseTransactionIndexLine(line, filePath, position, lineNumber); txIndex != nil {
 			f.index.transactions = append(f.index.transactions, *txIndex)
 		}
 
@@ -237,13 +238,20 @@ func (f *File) processFile(filePath string, accountSet, commoditySet map[string]
 }
 
 // parseTransactionAt seeks to a position and parses a complete transaction
-func (f *File) parseTransactionAt(position int64, lineNumber int) (*Transaction, error) {
+func (f *File) parseTransactionAt(filePath string, position int64, lineNumber int) (*Transaction, error) {
+	// Open the correct file (might be an included file, not the main file)
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %s: %w", filePath, err)
+	}
+	defer file.Close()
+
 	// Seek to the position
-	if _, err := f.file.Seek(position, 0); err != nil {
+	if _, err := file.Seek(position, 0); err != nil {
 		return nil, fmt.Errorf("failed to seek to position %d: %w", position, err)
 	}
 
-	scanner := bufio.NewScanner(f.file)
+	scanner := bufio.NewScanner(file)
 	scanner.Buffer(make([]byte, 0, 64*1024), 1024*1024)
 
 	// Parse the transaction starting at this position

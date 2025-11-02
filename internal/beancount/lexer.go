@@ -49,7 +49,7 @@ var (
 
 // parseTransactionIndexLine parses just enough to build an index entry
 // Returns nil if line is not a transaction start
-func parseTransactionIndexLine(line string, position int64, lineNumber int) *TransactionIndex {
+func parseTransactionIndexLine(line string, filePath string, position int64, lineNumber int) *TransactionIndex {
 	matches := transactionRegex.FindStringSubmatch(line)
 	if matches == nil {
 		return nil
@@ -68,6 +68,7 @@ func parseTransactionIndexLine(line string, position int64, lineNumber int) *Tra
 	return &TransactionIndex{
 		Date:         date,
 		Payee:        payee,
+		FilePath:     filePath,
 		FilePosition: position,
 		LineNumber:   lineNumber,
 	}
