@@ -1,0 +1,38 @@
+; Sample Beancount file for testing Lima parser
+
+2025-01-01 open Assets:Checking
+2025-01-01 open Assets:Savings
+2025-01-01 open Expenses:Food:Groceries
+2025-01-01 open Expenses:Food:DiningOut
+2025-01-01 open Expenses:Transportation:Gas
+2025-01-01 open Income:Salary
+
+2025-01-01 * "Opening Balance"
+  Assets:Checking  1000.00 USD
+  Assets:Savings  5000.00 USD
+  Equity:OpeningBalances  -6000.00 USD
+
+2025-01-05 * "Employer" "January Salary"
+  Assets:Checking  3500.00 USD
+  Income:Salary  -3500.00 USD
+
+2025-01-10 * "Starbucks" "Morning coffee" #coffee
+  Assets:Checking  -5.50 USD
+  Expenses:Food:DiningOut  5.50 USD
+
+2025-01-12 * "Safeway" "Weekly groceries" #groceries
+  Assets:Checking  -125.75 USD
+  Expenses:Food:Groceries  125.75 USD
+
+2025-01-15 ! "Gas Station" "Fill up tank" #pending
+  Assets:Checking  -45.00 USD
+  Expenses:Transportation:Gas  45.00 USD
+
+2025-01-20 * "Restaurant" "Dinner with friends" #dining ^receipt-123
+  category: "entertainment"
+  Assets:Checking  -85.00 USD
+  Expenses:Food:DiningOut  85.00 USD
+
+2025-01-25 * "Grocery Store" "More groceries"
+  Assets:Checking  -95.25 USD
+  Expenses:Food:Groceries  95.25 USD
