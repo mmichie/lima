@@ -1,0 +1,133 @@
+version: "1"
+patterns:
+    - id: starbucks
+      name: Starbucks Coffee
+      pattern: STARBUCKS
+      category: Expenses:Food:DiningOut
+      fields:
+        - payee
+      priority: 10
+      confidence: 0.95
+    - id: coffee-general
+      name: Coffee Shops
+      pattern: (?i)(coffee|cafe|espresso)
+      category: Expenses:Food:Coffee
+      fields:
+        - payee
+        - narration
+      priority: 5
+      confidence: 0.8
+    - id: safeway
+      name: Safeway Groceries
+      pattern: SAFEWAY
+      category: Expenses:Food:Groceries
+      fields:
+        - payee
+      priority: 10
+      confidence: 0.95
+    - id: qfc
+      name: QFC Groceries
+      pattern: QFC
+      category: Expenses:Food:Groceries
+      fields:
+        - payee
+      priority: 10
+      confidence: 0.95
+    - id: whole-foods
+      name: Whole Foods
+      pattern: WHOLE FOODS|WFM
+      category: Expenses:Food:Groceries
+      fields:
+        - payee
+      priority: 10
+      confidence: 0.95
+    - id: uber
+      name: Uber Rides
+      pattern: UBER
+      category: Expenses:Transport:Rideshare
+      fields:
+        - payee
+      priority: 10
+      confidence: 0.95
+    - id: lyft
+      name: Lyft Rides
+      pattern: LYFT
+      category: Expenses:Transport:Rideshare
+      fields:
+        - payee
+      priority: 10
+      confidence: 0.95
+    - id: gas-station
+      name: Gas Stations
+      pattern: (?i)(shell|chevron|76|arco|bp|exxon|mobil)
+      category: Expenses:Transport:Gas
+      fields:
+        - payee
+      priority: 8
+      confidence: 0.85
+    - id: electric
+      name: Electric Bill
+      pattern: (?i)(electric|pge|sce|sdge|power)
+      category: Expenses:Utilities:Electric
+      fields:
+        - payee
+        - narration
+      priority: 9
+      confidence: 0.9
+    - id: internet
+      name: Internet Service
+      pattern: (?i)(comcast|xfinity|att|verizon|spectrum|internet)
+      category: Expenses:Utilities:Internet
+      fields:
+        - payee
+        - narration
+      priority: 9
+      confidence: 0.9
+    - id: amazon
+      name: Amazon Purchases
+      pattern: AMAZON
+      category: Expenses:Shopping:Online
+      fields:
+        - payee
+      priority: 8
+      confidence: 0.9
+    - id: target
+      name: Target
+      pattern: TARGET
+      category: Expenses:Shopping:Retail
+      fields:
+        - payee
+      priority: 10
+      confidence: 0.95
+    - id: netflix
+      name: Netflix Subscription
+      pattern: NETFLIX
+      category: Expenses:Entertainment:Streaming
+      fields:
+        - payee
+      priority: 10
+      confidence: 0.95
+    - id: spotify
+      name: Spotify Subscription
+      pattern: SPOTIFY
+      category: Expenses:Entertainment:Music
+      fields:
+        - payee
+      priority: 10
+      confidence: 0.95
+    - id: pharmacy
+      name: Pharmacy
+      pattern: (?i)(walgreens|cvs|rite aid|pharmacy)
+      category: Expenses:Health:Pharmacy
+      fields:
+        - payee
+      priority: 9
+      confidence: 0.9
+    - id: paycheck
+      name: Salary/Paycheck
+      pattern: (?i)(payroll|salary|paycheck|direct dep)
+      category: Income:Salary
+      fields:
+        - narration
+      priority: 10
+      confidence: 0.95
