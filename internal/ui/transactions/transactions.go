@@ -230,14 +230,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the transactions view
 func (m Model) View() string {
-	if m.width == 0 {
-		return "Loading transactions..."
-	}
-
 	var lines []string
 
-	// Title with count
-	title := titleStyle.Render(fmt.Sprintf("Transactions (%d total)", m.totalTransactions))
+	// Title with count and debug info
+	title := titleStyle.Render(fmt.Sprintf("Transactions (%d total) [w:%d h:%d]", m.totalTransactions, m.width, m.height))
 	lines = append(lines, title)
 
 	if m.totalTransactions == 0 {
@@ -256,10 +252,16 @@ func (m Model) View() string {
 		endIdx = m.totalTransactions
 	}
 
+	// Debug: show range being rendered
+	lines = append(lines, fmt.Sprintf("Rendering range: %d to %d (maxVisible: %d)", m.offset, endIdx, maxVisible))
+	lines = append(lines, "")
+
 	// Render visible transactions
 	for i := m.offset; i < endIdx; i++ {
 		tx, err := m.file.GetTransaction(i)
 		if err != nil {
+			// Show error instead of silently skipping
+			lines = append(lines, fmt.Sprintf("Error loading transaction %d: %v", i, err))
 			continue
 		}
 
