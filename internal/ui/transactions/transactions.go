@@ -232,8 +232,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	var lines []string
 
-	// Title with count and debug info
-	title := titleStyle.Render(fmt.Sprintf("Transactions (%d total) [w:%d h:%d]", m.totalTransactions, m.width, m.height))
+	// Title with count
+	title := titleStyle.Render(fmt.Sprintf("Transactions (%d total)", m.totalTransactions))
 	lines = append(lines, title)
 
 	if m.totalTransactions == 0 {
@@ -251,10 +251,6 @@ func (m Model) View() string {
 	if endIdx > m.totalTransactions {
 		endIdx = m.totalTransactions
 	}
-
-	// Debug: show range being rendered
-	lines = append(lines, fmt.Sprintf("Rendering range: %d to %d (maxVisible: %d)", m.offset, endIdx, maxVisible))
-	lines = append(lines, "")
 
 	// Render visible transactions
 	for i := m.offset; i < endIdx; i++ {
