@@ -4,6 +4,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mmichie/lima/internal/beancount"
+	"github.com/mmichie/lima/internal/categorizer"
 	"github.com/mmichie/lima/internal/ui/accounts"
 	"github.com/mmichie/lima/internal/ui/dashboard"
 	"github.com/mmichie/lima/internal/ui/transactions"
@@ -30,6 +31,9 @@ type Model struct {
 
 	// Configuration
 	config *config.Config
+
+	// Categorizer
+	categorizer *categorizer.Categorizer
 
 	// View models
 	dashboard    dashboard.Model
@@ -100,13 +104,21 @@ func New(file *beancount.File, cfg *config.Config) Model {
 		initialView = DashboardView
 	}
 
+	// Create categorizer
+	cat, err := categorizer.New(cfg)
+	if err != nil {
+		// Log error but continue - categorizer is optional
+		cat = nil
+	}
+
 	return Model{
 		currentView:  initialView,
 		file:         file,
 		config:       cfg,
+		categorizer:  cat,
 		keys:         keyMapFromConfig(cfg),
 		dashboard:    dashboard.New(file),
-		transactions: transactions.New(file),
+		transactions: transactions.New(file, cat),
 		accounts:     accounts.New(file),
 	}
 }
