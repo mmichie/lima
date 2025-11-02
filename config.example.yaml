@@ -1,0 +1,113 @@
+# Lima Configuration File
+# Place this file at: ~/.config/lima/config.yaml
+
+# File Paths
+files:
+  # Default Beancount ledger file to open
+  default_ledger: ~/finances/main.beancount
+
+  # File containing categorization patterns
+  patterns_file: ~/.config/lima/patterns.yaml
+
+# User Interface Preferences
+ui:
+  # Default view on startup: dashboard, transactions, accounts, or reports
+  default_view: dashboard
+
+  # Number of items to show per page in lists
+  page_size: 20
+
+  # Date format (Go time format)
+  date_format: "2006-01-02"
+
+  # Show line numbers in transaction lists
+  show_line_numbers: false
+
+  # Use compact mode for lists (less spacing)
+  compact_mode: false
+
+# Theme Configuration
+theme:
+  # Primary accent color (hex format)
+  primary: "#00D9FF"
+
+  # Secondary accent color
+  secondary: "#7D56F4"
+
+  # Success/positive color (gains, positive amounts)
+  success: "#00FF00"
+
+  # Warning color
+  warning: "#FFFF00"
+
+  # Error/negative color (losses, negative amounts)
+  error: "#FF0000"
+
+  # Muted/secondary text color
+  muted: "#666666"
+
+  # Primary text color
+  text: "#FFFFFF"
+
+  # Background color
+  background: "#1a1a1a"
+
+# Keybindings
+# You can specify multiple keys for each action
+keybindings:
+  # Quit application
+  quit: ["q", "ctrl+c"]
+
+  # Show help
+  help: ["?"]
+
+  # Switch to dashboard view
+  dashboard: ["1"]
+
+  # Switch to transactions view
+  transactions: ["2"]
+
+  # Switch to accounts view
+  accounts: ["3"]
+
+  # Switch to reports view
+  reports: ["4"]
+
+  # Navigate up (vim-style)
+  up: ["up", "k"]
+
+  # Navigate down (vim-style)
+  down: ["down", "j"]
+
+  # Page up
+  page_up: ["pgup", "ctrl+b"]
+
+  # Page down
+  page_down: ["pgdown", "ctrl+f"]
+
+  # Jump to top
+  top: ["home", "g"]
+
+  # Jump to bottom
+  bottom: ["end", "G"]
+
+  # Select/enter
+  select: ["enter", "space"]
+
+  # Go back/cancel
+  back: ["esc", "backspace"]
+
+# Categorization Settings
+categorization:
+  # Enable categorization engine
+  enabled: true
+
+  # Automatically categorize new transactions
+  auto_categorize: false
+
+  # Confidence threshold for auto-categorization (0.0-1.0)
+  # Only suggest categories with confidence above this threshold
+  confidence_threshold: 0.8
+
+  # Learn from manual edits to improve categorization
+  learn_from_edits: true
