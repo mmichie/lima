@@ -246,7 +246,11 @@ func (m Model) View() string {
 	}
 
 	// Calculate visible range
+	// Default to showing at least 10 transactions if height not set
 	maxVisible := m.height - 3
+	if maxVisible <= 0 {
+		maxVisible = 10
+	}
 	endIdx := m.offset + maxVisible
 	if endIdx > m.totalTransactions {
 		endIdx = m.totalTransactions
