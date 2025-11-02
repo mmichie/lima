@@ -42,13 +42,13 @@ var (
 
 // keyMap defines key bindings for the transactions view
 type keyMap struct {
-	Up          key.Binding
-	Down        key.Binding
-	PageUp      key.Binding
-	PageDown    key.Binding
-	Top         key.Binding
-	Bottom      key.Binding
-	Enter       key.Binding
+	Up       key.Binding
+	Down     key.Binding
+	PageUp   key.Binding
+	PageDown key.Binding
+	Top      key.Binding
+	Bottom   key.Binding
+	Enter    key.Binding
 }
 
 func newKeyMap() keyMap {
@@ -91,9 +91,9 @@ type Model struct {
 	height int
 
 	// List state
-	cursor   int
-	offset   int
-	keys     keyMap
+	cursor int
+	offset int
+	keys   keyMap
 
 	// Cached data
 	totalTransactions int

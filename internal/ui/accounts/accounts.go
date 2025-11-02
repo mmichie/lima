@@ -71,11 +71,11 @@ type Model struct {
 	keys     keyMap
 
 	// Grouped accounts
-	assets     []string
+	assets      []string
 	liabilities []string
-	equity     []string
-	income     []string
-	expenses   []string
+	equity      []string
+	income      []string
+	expenses    []string
 }
 
 // New creates a new accounts model

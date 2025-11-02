@@ -10,10 +10,10 @@ import (
 
 // File represents an opened Beancount file with lazy loading support
 type File struct {
-	path     string
-	file     *os.File
-	index    *Index
-	cache    *Cache
+	path  string
+	file  *os.File
+	index *Index
+	cache *Cache
 }
 
 // Index stores positions of all directives in the file for lazy loading
@@ -118,7 +118,7 @@ func (f *File) GetTransactionsByDateRange(start, end time.Time) ([]*Transaction,
 
 	for i, txIndex := range f.index.transactions {
 		if (txIndex.Date.Equal(start) || txIndex.Date.After(start)) &&
-		   (txIndex.Date.Equal(end) || txIndex.Date.Before(end)) {
+			(txIndex.Date.Equal(end) || txIndex.Date.Before(end)) {
 			tx, err := f.GetTransaction(i)
 			if err != nil {
 				return nil, err

@@ -46,8 +46,8 @@ type Transaction struct {
 	LineNumber   int
 }
 
-func (t Transaction) GetDate() time.Time       { return t.Date }
-func (t Transaction) GetType() DirectiveType   { return DirectiveTypeTransaction }
+func (t Transaction) GetDate() time.Time     { return t.Date }
+func (t Transaction) GetType() DirectiveType { return DirectiveTypeTransaction }
 
 // Posting represents a single posting within a transaction
 type Posting struct {
@@ -124,11 +124,11 @@ func (c Commodity) GetType() DirectiveType { return DirectiveTypeCommodity }
 
 // Pad represents a pad directive
 type Pad struct {
-	Date       time.Time
-	Account    string
+	Date          time.Time
+	Account       string
 	SourceAccount string
-	Metadata   map[string]string
-	LineNumber int
+	Metadata      map[string]string
+	LineNumber    int
 }
 
 func (p Pad) GetDate() time.Time     { return p.Date }

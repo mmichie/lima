@@ -34,11 +34,11 @@ type FilesConfig struct {
 
 // UIConfig contains UI preferences
 type UIConfig struct {
-	DefaultView    string `yaml:"default_view"`     // "dashboard", "transactions", "accounts", "reports"
-	PageSize       int    `yaml:"page_size"`        // Number of items per page
-	DateFormat     string `yaml:"date_format"`      // Date format string
+	DefaultView     string `yaml:"default_view"` // "dashboard", "transactions", "accounts", "reports"
+	PageSize        int    `yaml:"page_size"`    // Number of items per page
+	DateFormat      string `yaml:"date_format"`  // Date format string
 	ShowLineNumbers bool   `yaml:"show_line_numbers"`
-	CompactMode    bool   `yaml:"compact_mode"`
+	CompactMode     bool   `yaml:"compact_mode"`
 }
 
 // ThemeConfig contains theme settings
@@ -73,10 +73,10 @@ type KeybindingsConfig struct {
 
 // CategorizationConfig contains categorization settings
 type CategorizationConfig struct {
-	Enabled         bool    `yaml:"enabled"`
-	AutoCategorize  bool    `yaml:"auto_categorize"`
+	Enabled             bool    `yaml:"enabled"`
+	AutoCategorize      bool    `yaml:"auto_categorize"`
 	ConfidenceThreshold float64 `yaml:"confidence_threshold"`
-	LearnFromEdits  bool    `yaml:"learn_from_edits"`
+	LearnFromEdits      bool    `yaml:"learn_from_edits"`
 }
 
 // DefaultConfig returns the default configuration
@@ -89,11 +89,11 @@ func DefaultConfig() *Config {
 			PatternsFile:  filepath.Join(homeDir, ".config", "lima", "patterns.yaml"),
 		},
 		UI: UIConfig{
-			DefaultView:    "dashboard",
-			PageSize:       20,
-			DateFormat:     "2006-01-02",
+			DefaultView:     "dashboard",
+			PageSize:        20,
+			DateFormat:      "2006-01-02",
 			ShowLineNumbers: false,
-			CompactMode:    false,
+			CompactMode:     false,
 		},
 		Theme: ThemeConfig{
 			Primary:    "#00D9FF",
@@ -122,10 +122,10 @@ func DefaultConfig() *Config {
 			Back:         []string{"esc", "backspace"},
 		},
 		Categorization: CategorizationConfig{
-			Enabled:         true,
-			AutoCategorize:  false,
+			Enabled:             true,
+			AutoCategorize:      false,
 			ConfidenceThreshold: 0.8,
-			LearnFromEdits:  true,
+			LearnFromEdits:      true,
 		},
 	}
 }

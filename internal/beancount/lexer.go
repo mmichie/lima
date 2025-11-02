@@ -93,12 +93,12 @@ func parseTransaction(scanner *bufio.Scanner, startLine int) (*Transaction, erro
 	}
 
 	tx := &Transaction{
-		Date:      date,
-		Flag:      matches[2],
-		Payee:     matches[3],
-		Narration: matches[4],
-		Postings:  make([]Posting, 0),
-		Metadata:  make(map[string]string),
+		Date:       date,
+		Flag:       matches[2],
+		Payee:      matches[3],
+		Narration:  matches[4],
+		Postings:   make([]Posting, 0),
+		Metadata:   make(map[string]string),
 		LineNumber: startLine,
 	}
 
