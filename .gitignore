@@ -1,5 +1,5 @@
-# Binaries
-lima
+# Binaries (in root only)
+/lima
 *.exe
 *.exe~
 *.dll
