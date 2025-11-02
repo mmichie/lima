@@ -156,7 +156,7 @@ func (c *Categorizer) Feedback(suggestion *Suggestion, accepted bool) error {
 
 	// If configured to learn from edits, save updated patterns
 	if c.config.Categorization.LearnFromEdits && c.config.Files.PatternsFile != "" {
-		if err := c.SavePatterns(c.config.Files.PatternsFile); err != nil {
+		if err := c.savePatternsUnlocked(c.config.Files.PatternsFile); err != nil {
 			// Log error but don't fail - statistics are already updated in memory
 			return fmt.Errorf("failed to save patterns: %w", err)
 		}
@@ -170,6 +170,11 @@ func (c *Categorizer) SavePatterns(path string) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
+	return c.savePatternsUnlocked(path)
+}
+
+// savePatternsUnlocked saves patterns without locking (internal use)
+func (c *Categorizer) savePatternsUnlocked(path string) error {
 	return c.loader.SaveFile(path, c.patterns)
 }
 
