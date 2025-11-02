@@ -1,141 +1,53 @@
 package ui
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"github.com/mmichie/lima/internal/ui/components"
+	"github.com/mmichie/lima/internal/ui/theme"
 )
 
-var (
-	// Color palette
-	primaryColor   = lipgloss.Color("#00D9FF")
-	secondaryColor = lipgloss.Color("#7D56F4")
-	successColor   = lipgloss.Color("#00FF00")
-	warningColor   = lipgloss.Color("#FFFF00")
-	errorColor     = lipgloss.Color("#FF0000")
-	mutedColor     = lipgloss.Color("#666666")
-	textColor      = lipgloss.Color("#FFFFFF")
-
-	// Base styles
-	baseStyle = lipgloss.NewStyle().
-			Foreground(textColor)
-
-	// Header styles
-	headerStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(primaryColor).
-			Background(lipgloss.Color("#1a1a1a")).
-			Padding(0, 1)
-
-	activeTabStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(primaryColor).
-			Background(lipgloss.Color("#333333")).
-			Padding(0, 2)
-
-	inactiveTabStyle = lipgloss.NewStyle().
-				Foreground(mutedColor).
-				Background(lipgloss.Color("#1a1a1a")).
-				Padding(0, 2)
-
-	// Footer styles
-	footerStyle = lipgloss.NewStyle().
-			Foreground(mutedColor).
-			Background(lipgloss.Color("#1a1a1a")).
-			Padding(0, 1)
-
-	// Content styles
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(primaryColor).
-			MarginBottom(1)
-
-	subtitleStyle = lipgloss.NewStyle().
-			Foreground(secondaryColor).
-			MarginBottom(1)
-
-	// List styles
-	selectedItemStyle = lipgloss.NewStyle().
-				Foreground(primaryColor).
-				Bold(true)
-
-	normalItemStyle = lipgloss.NewStyle().
-			Foreground(textColor)
-)
-
-// renderHeader renders the application header with navigation tabs
-func renderHeader(currentView ViewType) string {
-	var tabs []string
-
-	// Dashboard tab
-	if currentView == DashboardView {
-		tabs = append(tabs, activeTabStyle.Render("1: Dashboard"))
-	} else {
-		tabs = append(tabs, inactiveTabStyle.Render("1: Dashboard"))
-	}
-
-	// Transactions tab
-	if currentView == TransactionsView {
-		tabs = append(tabs, activeTabStyle.Render("2: Transactions"))
-	} else {
-		tabs = append(tabs, inactiveTabStyle.Render("2: Transactions"))
-	}
-
-	// Accounts tab
-	if currentView == AccountsView {
-		tabs = append(tabs, activeTabStyle.Render("3: Accounts"))
-	} else {
-		tabs = append(tabs, inactiveTabStyle.Render("3: Accounts"))
-	}
-
-	// Reports tab
-	if currentView == ReportsView {
-		tabs = append(tabs, activeTabStyle.Render("4: Reports"))
-	} else {
-		tabs = append(tabs, inactiveTabStyle.Render("4: Reports"))
-	}
-
-	header := headerStyle.Render("Lima - Beancount TUI")
-	tabsRendered := lipgloss.JoinHorizontal(lipgloss.Top, tabs...)
-
-	return lipgloss.JoinVertical(lipgloss.Left,
-		header,
-		tabsRendered,
-	)
+// renderHeader renders the TP7-style menu bar
+func renderHeader(menuBar components.MenuBar) string {
+	return menuBar.View()
 }
 
-// renderFooter renders the application footer with key bindings
-func renderFooter(keys keyMap) string {
-	helpText := fmt.Sprintf(
-		"%s %s • %s %s • %s %s • %s %s • %s %s",
-		keys.Dashboard.Help().Key, keys.Dashboard.Help().Desc,
-		keys.Transactions.Help().Key, keys.Transactions.Help().Desc,
-		keys.Accounts.Help().Key, keys.Accounts.Help().Desc,
-		keys.Reports.Help().Key, keys.Reports.Help().Desc,
-		keys.Quit.Help().Key, keys.Quit.Help().Desc,
-	)
+// renderFooter renders the TP7-style status bar based on current view
+func renderFooter(currentView ViewType, statusBar components.StatusBar) string {
+	// Set context-specific status bar items based on view
+	var items []components.StatusBarItem
+	switch currentView {
+	case DashboardView:
+		items = components.DashboardStatusBar()
+	case TransactionsView:
+		items = components.TransactionsStatusBar()
+	case AccountsView:
+		items = components.AccountsStatusBar()
+	case ReportsView:
+		items = components.ReportsStatusBar()
+	default:
+		items = components.DashboardStatusBar()
+	}
 
-	return footerStyle.Render(helpText)
+	statusBar = statusBar.SetItems(items)
+	return statusBar.View()
 }
 
-// formatAmount formats a decimal amount with commodity
+// formatAmount formats a decimal amount with commodity using TP7 theme
 func formatAmount(amount string, commodity string) string {
-	amountStyle := lipgloss.NewStyle().Foreground(successColor)
+	amountStyle := theme.AmountPositiveStyle
 	if strings.HasPrefix(amount, "-") {
-		amountStyle = lipgloss.NewStyle().Foreground(errorColor)
+		amountStyle = theme.AmountNegativeStyle
 	}
 	return amountStyle.Render(amount + " " + commodity)
 }
 
-// formatDate formats a date string
+// formatDate formats a date string using TP7 theme
 func formatDate(date string) string {
-	style := lipgloss.NewStyle().Foreground(mutedColor)
-	return style.Render(date)
+	return theme.DateStyle.Render(date)
 }
 
-// formatAccount formats an account name
+// formatAccount formats an account name using TP7 theme
 func formatAccount(account string) string {
-	style := lipgloss.NewStyle().Foreground(textColor)
-	return style.Render(account)
+	return theme.NormalTextStyle.Render(account)
 }

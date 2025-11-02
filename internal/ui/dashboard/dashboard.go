@@ -7,27 +7,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mmichie/lima/internal/beancount"
+	"github.com/mmichie/lima/internal/ui/theme"
 	"github.com/shopspring/decimal"
-)
-
-var (
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#00D9FF")).
-			MarginBottom(1)
-
-	boxStyle = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("#7D56F4")).
-			Padding(1, 2).
-			Width(30)
-
-	statLabelStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#666666"))
-
-	statValueStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#00D9FF"))
 )
 
 // Model represents the dashboard view model
@@ -64,14 +45,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View renders the dashboard
+// View renders the dashboard with TP7 styling
 func (m Model) View() string {
 	if m.width == 0 {
-		return "Loading dashboard..."
+		return theme.NormalTextStyle.Render("Loading dashboard...")
 	}
 
 	// Title
-	title := titleStyle.Render("Dashboard")
+	title := theme.TitleStyle.Render("Dashboard")
 
 	// Statistics boxes
 	stats := m.renderStats()
@@ -97,27 +78,35 @@ func (m Model) SetSize(width, height int) Model {
 	return m
 }
 
-// renderStats renders the statistics boxes
+// renderStats renders the statistics boxes with TP7 styling
 func (m Model) renderStats() string {
+	boxStyle := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color(theme.TP7Cyan)).
+		BorderBackground(lipgloss.Color(theme.TP7Blue)).
+		Background(lipgloss.Color(theme.TP7Blue)).
+		Padding(1, 2).
+		Width(30)
+
 	// Transaction stats box
 	transactionsBox := boxStyle.Render(fmt.Sprintf(
 		"%s\n%s",
-		statLabelStyle.Render("Total Transactions"),
-		statValueStyle.Render(fmt.Sprintf("%d", m.totalTransactions)),
+		theme.MutedTextStyle.Render("Total Transactions"),
+		theme.HighlightStyle.Render(fmt.Sprintf("%d", m.totalTransactions)),
 	))
 
 	// Accounts box
 	accountsBox := boxStyle.Render(fmt.Sprintf(
 		"%s\n%s",
-		statLabelStyle.Render("Accounts"),
-		statValueStyle.Render(fmt.Sprintf("%d", m.totalAccounts)),
+		theme.MutedTextStyle.Render("Accounts"),
+		theme.HighlightStyle.Render(fmt.Sprintf("%d", m.totalAccounts)),
 	))
 
 	// Commodities box
 	commoditiesBox := boxStyle.Render(fmt.Sprintf(
 		"%s\n%s",
-		statLabelStyle.Render("Commodities"),
-		statValueStyle.Render(fmt.Sprintf("%d", m.totalCommodities)),
+		theme.MutedTextStyle.Render("Commodities"),
+		theme.HighlightStyle.Render(fmt.Sprintf("%d", m.totalCommodities)),
 	))
 
 	return lipgloss.JoinHorizontal(lipgloss.Top,
@@ -129,10 +118,10 @@ func (m Model) renderStats() string {
 	)
 }
 
-// renderRecentTransactions renders the most recent transactions
+// renderRecentTransactions renders the most recent transactions with TP7 styling
 func (m Model) renderRecentTransactions() string {
 	var lines []string
-	lines = append(lines, titleStyle.Render("Recent Transactions"))
+	lines = append(lines, theme.TitleStyle.Render("Recent Transactions"))
 
 	count := m.recentCount
 	if count > m.totalTransactions {
@@ -153,6 +142,9 @@ func (m Model) renderRecentTransactions() string {
 		if tx.Payee != "" {
 			description = tx.Payee + " - " + tx.Narration
 		}
+		if len(description) > 50 {
+			description = description[:47] + "..."
+		}
 
 		// Get total amount (sum of all postings)
 		var total decimal.Decimal
@@ -166,18 +158,26 @@ func (m Model) renderRecentTransactions() string {
 			}
 		}
 
+		// Format flag with TP7 colors
+		flagStr := tx.Flag
+		if tx.Flag == "*" {
+			flagStr = theme.SuccessStyle.Render("*")
+		} else {
+			flagStr = theme.WarningStyle.Render("!")
+		}
+
 		// Format the line
-		line := fmt.Sprintf("  %s  %s  %s",
-			lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Render(dateStr),
-			description,
-			lipgloss.NewStyle().Foreground(lipgloss.Color("#7D56F4")).Render(tx.Flag),
+		line := fmt.Sprintf("  %s  %-50s  %s",
+			theme.DateStyle.Render(dateStr),
+			theme.NormalTextStyle.Render(description),
+			flagStr,
 		)
 
 		lines = append(lines, line)
 	}
 
 	if m.totalTransactions == 0 {
-		lines = append(lines, "  No transactions found")
+		lines = append(lines, theme.MutedTextStyle.Render("  No transactions found"))
 	}
 
 	return strings.Join(lines, "\n")

@@ -6,28 +6,8 @@ import (
 
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/mmichie/lima/internal/beancount"
-)
-
-var (
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#00D9FF")).
-			MarginBottom(1)
-
-	selectedStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#00D9FF")).
-			Background(lipgloss.Color("#333333")).
-			Bold(true)
-
-	normalStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF"))
-
-	categoryStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#7D56F4")).
-			MarginTop(1)
+	"github.com/mmichie/lima/internal/ui/theme"
 )
 
 // keyMap defines key bindings for the accounts view
@@ -138,20 +118,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View renders the accounts view
+// View renders the accounts view with TP7 styling
 func (m Model) View() string {
 	if m.width == 0 {
-		return "Loading accounts..."
+		return theme.NormalTextStyle.Render("Loading accounts...")
 	}
 
 	var lines []string
 
 	// Title
-	title := titleStyle.Render(fmt.Sprintf("Accounts (%d total)", len(m.accounts)))
+	title := theme.TitleStyle.Render(fmt.Sprintf("Accounts (%d total)", len(m.accounts)))
 	lines = append(lines, title)
 
 	if len(m.accounts) == 0 {
-		lines = append(lines, "No accounts found")
+		lines = append(lines, theme.NormalTextStyle.Render("No accounts found"))
 		return strings.Join(lines, "\n")
 	}
 
@@ -159,34 +139,29 @@ func (m Model) View() string {
 	currentIdx := 0
 
 	if len(m.assets) > 0 {
-		lines = append(lines, categoryStyle.Render("Assets"))
+		lines = append(lines, theme.HighlightStyle.Render("Assets"))
 		currentIdx = m.renderAccountGroup(m.assets, currentIdx, &lines)
 	}
 
 	if len(m.liabilities) > 0 {
-		lines = append(lines, categoryStyle.Render("Liabilities"))
+		lines = append(lines, theme.HighlightStyle.Render("Liabilities"))
 		currentIdx = m.renderAccountGroup(m.liabilities, currentIdx, &lines)
 	}
 
 	if len(m.equity) > 0 {
-		lines = append(lines, categoryStyle.Render("Equity"))
+		lines = append(lines, theme.HighlightStyle.Render("Equity"))
 		currentIdx = m.renderAccountGroup(m.equity, currentIdx, &lines)
 	}
 
 	if len(m.income) > 0 {
-		lines = append(lines, categoryStyle.Render("Income"))
+		lines = append(lines, theme.HighlightStyle.Render("Income"))
 		currentIdx = m.renderAccountGroup(m.income, currentIdx, &lines)
 	}
 
 	if len(m.expenses) > 0 {
-		lines = append(lines, categoryStyle.Render("Expenses"))
+		lines = append(lines, theme.HighlightStyle.Render("Expenses"))
 		currentIdx = m.renderAccountGroup(m.expenses, currentIdx, &lines)
 	}
-
-	// Add navigation help
-	help := fmt.Sprintf("  j/k:navigate • g/G:top/bottom • 1-4:switch view")
-	lines = append(lines, "")
-	lines = append(lines, lipgloss.NewStyle().Foreground(lipgloss.Color("#666666")).Render(help))
 
 	return strings.Join(lines, "\n")
 }
@@ -198,14 +173,14 @@ func (m Model) SetSize(width, height int) Model {
 	return m
 }
 
-// renderAccountGroup renders a group of accounts
+// renderAccountGroup renders a group of accounts with TP7 styling
 func (m Model) renderAccountGroup(accounts []string, startIdx int, lines *[]string) int {
 	idx := startIdx
 	for _, acc := range accounts {
 		if idx == m.cursor {
-			*lines = append(*lines, selectedStyle.Render("  > "+acc))
+			*lines = append(*lines, theme.SelectedItemStyle.Render("  > "+acc))
 		} else {
-			*lines = append(*lines, normalStyle.Render("    "+acc))
+			*lines = append(*lines, theme.ListItemStyle.Render("    "+acc))
 		}
 		idx++
 	}

@@ -9,36 +9,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mmichie/lima/internal/beancount"
 	"github.com/mmichie/lima/internal/categorizer"
-)
-
-var (
-	titleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(lipgloss.Color("#00D9FF")).
-			MarginBottom(1)
-
-	selectedStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#00D9FF")).
-			Background(lipgloss.Color("#333333")).
-			Bold(true)
-
-	normalStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FFFFFF"))
-
-	dateStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#666666"))
-
-	amountStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#00FF00"))
-
-	negativeAmountStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#FF0000"))
-
-	flagClearedStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#00FF00"))
-
-	flagPendingStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("#FFFF00"))
+	"github.com/mmichie/lima/internal/ui/theme"
 )
 
 // keyMap defines key bindings for the transactions view
@@ -232,12 +203,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	var lines []string
 
-	// Title with count
-	title := titleStyle.Render(fmt.Sprintf("Transactions (%d total)", m.totalTransactions))
+	// Title with count using TP7 style
+	title := theme.TitleStyle.Render(fmt.Sprintf("Transactions (%d total)", m.totalTransactions))
 	lines = append(lines, title)
 
 	if m.totalTransactions == 0 {
-		lines = append(lines, "No transactions found")
+		lines = append(lines, theme.NormalTextStyle.Render("No transactions found"))
 		return strings.Join(lines, "\n")
 	}
 
@@ -257,19 +228,14 @@ func (m Model) View() string {
 		tx, err := m.file.GetTransaction(i)
 		if err != nil {
 			// Show error instead of silently skipping
-			lines = append(lines, fmt.Sprintf("Error loading transaction %d: %v", i, err))
+			errMsg := fmt.Sprintf("Error loading transaction %d: %v", i, err)
+			lines = append(lines, theme.ErrorStyle.Render(errMsg))
 			continue
 		}
 
 		line := m.renderTransactionLine(tx, i == m.cursor)
 		lines = append(lines, line)
 	}
-
-	// Add navigation help at bottom
-	help := fmt.Sprintf("  %d/%d • j/k:navigate • enter:categorize • g/G:top/bottom • 1-4:switch view",
-		m.cursor+1, m.totalTransactions)
-	lines = append(lines, "")
-	lines = append(lines, dateStyle.Render(help))
 
 	view := strings.Join(lines, "\n")
 
@@ -288,7 +254,7 @@ func (m Model) SetSize(width, height int) Model {
 	return m
 }
 
-// renderTransactionLine renders a single transaction line
+// renderTransactionLine renders a single transaction line with TP7 styling
 func (m Model) renderTransactionLine(tx *beancount.Transaction, selected bool) string {
 	// Date
 	dateStr := tx.Date.Format("2006-01-02")
@@ -296,9 +262,9 @@ func (m Model) renderTransactionLine(tx *beancount.Transaction, selected bool) s
 	// Flag
 	var flagStr string
 	if tx.Flag == "*" {
-		flagStr = flagClearedStyle.Render("*")
+		flagStr = theme.SuccessStyle.Render("*")
 	} else {
-		flagStr = flagPendingStyle.Render("!")
+		flagStr = theme.WarningStyle.Render("!")
 	}
 
 	// Description
@@ -317,9 +283,9 @@ func (m Model) renderTransactionLine(tx *beancount.Transaction, selected bool) s
 		commodity := tx.Postings[0].Amount.Commodity
 
 		if tx.Postings[0].Amount.Number.IsNegative() {
-			amountStr = negativeAmountStyle.Render(fmt.Sprintf("%s %s", amount, commodity))
+			amountStr = theme.AmountNegativeStyle.Render(fmt.Sprintf("%s %s", amount, commodity))
 		} else {
-			amountStr = amountStyle.Render(fmt.Sprintf("%s %s", amount, commodity))
+			amountStr = theme.AmountPositiveStyle.Render(fmt.Sprintf("%s %s", amount, commodity))
 		}
 	}
 
@@ -332,56 +298,70 @@ func (m Model) renderTransactionLine(tx *beancount.Transaction, selected bool) s
 		}
 	}
 
-	// Format the line
+	// Format the line with TP7 colors
+	if selected {
+		// Selected line: black on cyan (TP7 style)
+		line := fmt.Sprintf("  %s %s %-30s %-35s %s",
+			dateStr,
+			flagStr,
+			description,
+			account,
+			amountStr,
+		)
+		return theme.SelectedItemStyle.Render(line)
+	}
+
+	// Normal line: white on blue
 	line := fmt.Sprintf("  %s %s %-30s %-35s %s",
-		dateStyle.Render(dateStr),
+		theme.DateStyle.Render(dateStr),
 		flagStr,
 		description,
 		account,
 		amountStr,
 	)
-
-	if selected {
-		line = selectedStyle.Render(line)
-	} else {
-		line = normalStyle.Render(line)
-	}
-
-	return line
+	return theme.ListItemStyle.Render(line)
 }
 
-// renderCategoryPicker renders the category picker overlay
+// renderCategoryPicker renders the category picker overlay with TP7 styling
 func (m Model) renderCategoryPicker() string {
 	pickerStyle := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#00D9FF")).
+		BorderForeground(lipgloss.Color(theme.TP7Cyan)).
+		BorderBackground(lipgloss.Color(theme.TP7Blue)).
+		Background(lipgloss.Color(theme.TP7Blue)).
 		Padding(1, 2).
 		Width(m.width - 4)
 
 	var lines []string
-	lines = append(lines, titleStyle.Render("📋 Category Suggestions"))
+	lines = append(lines, theme.TitleStyle.Render("Category Suggestions"))
 	lines = append(lines, "")
 
 	if len(m.currentSuggestions) == 0 {
-		lines = append(lines, "No categorization suggestions available")
+		lines = append(lines, theme.NormalTextStyle.Render("No categorization suggestions available"))
 	} else {
 		for i, suggestion := range m.currentSuggestions {
 			confidence := fmt.Sprintf("%.0f%%", suggestion.Confidence*100)
 
-			// Show emoji based on confidence
-			emoji := "✅"
+			// Show indicator based on confidence using TP7 colors
+			indicator := "+"
+			indicatorStyle := theme.SuccessStyle
 			if suggestion.Confidence < 0.8 {
-				emoji = "⚠️ "
+				indicator = "~"
+				indicatorStyle = theme.WarningStyle
 			} else if suggestion.Confidence >= 0.95 {
-				emoji = "🎯"
+				indicator = "*"
+				indicatorStyle = theme.HighlightStyle
 			}
 
-			line := fmt.Sprintf("%s %s (%s)", emoji, suggestion.Category, confidence)
+			line := fmt.Sprintf("%s %s (%s)",
+				indicatorStyle.Render(indicator),
+				suggestion.Category,
+				confidence)
 
 			if i == m.pickerCursor {
-				line = selectedStyle.Render("➤ " + line)
+				line = theme.SelectedItemStyle.Render(" > " + line)
 			} else {
-				line = normalStyle.Render("  " + line)
+				line = theme.ListItemStyle.Render("   " + line)
 			}
 
 			lines = append(lines, line)
@@ -389,7 +369,7 @@ func (m Model) renderCategoryPicker() string {
 	}
 
 	lines = append(lines, "")
-	lines = append(lines, dateStyle.Render("j/k:navigate • enter:select • esc:cancel"))
+	lines = append(lines, theme.MutedTextStyle.Render("j/k:navigate   enter:select   esc:cancel"))
 
 	content := strings.Join(lines, "\n")
 	return pickerStyle.Render(content)

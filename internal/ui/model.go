@@ -6,6 +6,7 @@ import (
 	"github.com/mmichie/lima/internal/beancount"
 	"github.com/mmichie/lima/internal/categorizer"
 	"github.com/mmichie/lima/internal/ui/accounts"
+	"github.com/mmichie/lima/internal/ui/components"
 	"github.com/mmichie/lima/internal/ui/dashboard"
 	"github.com/mmichie/lima/internal/ui/transactions"
 	"github.com/mmichie/lima/pkg/config"
@@ -39,6 +40,10 @@ type Model struct {
 	dashboard    dashboard.Model
 	transactions transactions.Model
 	accounts     accounts.Model
+
+	// TP7-style UI components
+	menuBar   components.MenuBar
+	statusBar components.StatusBar
 
 	// UI state
 	width  int
@@ -120,6 +125,8 @@ func New(file *beancount.File, cfg *config.Config) Model {
 		dashboard:    dashboard.New(file),
 		transactions: transactions.New(file, cat),
 		accounts:     accounts.New(file),
+		menuBar:      components.NewMenuBar(),
+		statusBar:    components.NewStatusBar(),
 	}
 }
 
@@ -138,14 +145,31 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.ready = true
 
-		// Update all view sizes
-		m.dashboard = m.dashboard.SetSize(msg.Width, msg.Height-4) // -4 for header/footer
-		m.transactions = m.transactions.SetSize(msg.Width, msg.Height-4)
-		m.accounts = m.accounts.SetSize(msg.Width, msg.Height-4)
+		// Update menu bar and status bar sizes
+		m.menuBar = m.menuBar.SetWidth(msg.Width)
+		m.statusBar = m.statusBar.SetWidth(msg.Width)
+
+		// Update all view sizes (-2 for menu bar and status bar)
+		contentHeight := msg.Height - 2
+		m.dashboard = m.dashboard.SetSize(msg.Width, contentHeight)
+		m.transactions = m.transactions.SetSize(msg.Width, contentHeight)
+		m.accounts = m.accounts.SetSize(msg.Width, contentHeight)
 
 		return m, nil
 
 	case tea.KeyMsg:
+		// Let menu bar handle its keys first (F10, Alt+keys, etc.)
+		newMenuBar, menuCmd := m.menuBar.Update(msg)
+		m.menuBar = newMenuBar
+		if menuCmd != nil {
+			cmds = append(cmds, menuCmd)
+		}
+
+		// If menu is active, don't process other keys
+		if m.menuBar.IsActive() {
+			return m, tea.Batch(cmds...)
+		}
+
 		// Global navigation keys
 		switch {
 		case key.Matches(msg, m.keys.Quit):
@@ -164,6 +188,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case key.Matches(msg, m.keys.Reports):
+			m.currentView = ReportsView
+			return m, nil
+
+		// TP7-style F-key shortcuts
+		case msg.String() == "f2":
+			m.currentView = DashboardView
+			return m, nil
+		case msg.String() == "f3":
+			m.currentView = TransactionsView
+			return m, nil
+		case msg.String() == "f4":
+			m.currentView = AccountsView
+			return m, nil
+		case msg.String() == "f5":
 			m.currentView = ReportsView
 			return m, nil
 		}
@@ -196,8 +234,8 @@ func (m Model) View() string {
 		return "Loading..."
 	}
 
-	// Render header
-	header := renderHeader(m.currentView)
+	// Render TP7-style menu bar
+	header := renderHeader(m.menuBar)
 
 	// Render current view
 	var content string
@@ -212,8 +250,8 @@ func (m Model) View() string {
 		content = "Reports view coming soon..."
 	}
 
-	// Render footer
-	footer := renderFooter(m.keys)
+	// Render TP7-style status bar
+	footer := renderFooter(m.currentView, m.statusBar)
 
 	return header + "\n" + content + "\n" + footer
 }
