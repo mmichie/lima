@@ -231,7 +231,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // View renders the UI
 func (m Model) View() string {
 	if !m.ready {
-		return "Loading..."
+		return renderLoadingScreen()
 	}
 
 	// Render TP7-style menu bar
@@ -247,8 +247,12 @@ func (m Model) View() string {
 	case AccountsView:
 		content = m.accounts.View()
 	case ReportsView:
-		content = "Reports view coming soon..."
+		content = renderReportsPlaceholder()
 	}
+
+	// Fill the content area with TP7 blue background to full height
+	contentHeight := m.height - 2 // Minus menu bar and status bar
+	content = renderFullScreenContent(content, m.width, contentHeight)
 
 	// Render TP7-style status bar
 	footer := renderFooter(m.currentView, m.statusBar)

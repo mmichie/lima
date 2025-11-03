@@ -3,6 +3,7 @@ package ui
 import (
 	"strings"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/mmichie/lima/internal/ui/components"
 	"github.com/mmichie/lima/internal/ui/theme"
 )
@@ -50,4 +51,28 @@ func formatDate(date string) string {
 // formatAccount formats an account name using TP7 theme
 func formatAccount(account string) string {
 	return theme.NormalTextStyle.Render(account)
+}
+
+// renderFullScreenContent fills the content area with TP7 blue background
+func renderFullScreenContent(content string, width, height int) string {
+	// Create a style that fills the entire content area with blue background
+	fullScreenStyle := lipgloss.NewStyle().
+		Background(lipgloss.Color(theme.TP7Blue)).
+		Width(width).
+		Height(height)
+
+	return fullScreenStyle.Render(content)
+}
+
+// renderReportsPlaceholder renders a placeholder for the reports view
+func renderReportsPlaceholder() string {
+	title := theme.TitleStyle.Render("Reports")
+	message := theme.NormalTextStyle.Render("\n  Reports view coming soon...")
+
+	return title + message
+}
+
+// renderLoadingScreen renders a TP7-styled loading screen
+func renderLoadingScreen() string {
+	return theme.NormalTextStyle.Render("Loading...")
 }

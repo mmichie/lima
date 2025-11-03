@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(bd create:*)"
+      "Bash(bd create:*)",
+      "Bash(bd close:*)"
     ],
     "deny": [],
     "ask": []
