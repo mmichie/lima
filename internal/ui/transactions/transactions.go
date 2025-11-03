@@ -90,7 +90,7 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 		{Title: "Amount", Width: 15},
 	}
 
-	// Build rows from transactions
+	// Build rows from transactions with TP7 styling
 	rows := []table.Row{}
 	for i := 0; i < totalTransactions; i++ {
 		tx, err := file.GetTransaction(i)
@@ -98,10 +98,18 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 			continue
 		}
 
-		// Format transaction data
-		dateStr := tx.Date.Format("2006-01-02")
-		flag := tx.Flag
+		// Format transaction data with colors
+		dateStr := theme.DateStyle.Render(tx.Date.Format("2006-01-02"))
 
+		// Flag with color
+		var flagStr string
+		if tx.Flag == "*" {
+			flagStr = theme.SuccessStyle.Render("*")
+		} else {
+			flagStr = theme.WarningStyle.Render("!")
+		}
+
+		// Description
 		description := tx.Narration
 		if tx.Payee != "" {
 			description = tx.Payee
@@ -110,6 +118,7 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 			description = description[:37] + "..."
 		}
 
+		// Account
 		account := ""
 		if len(tx.Postings) > 0 {
 			account = tx.Postings[0].Account
@@ -118,14 +127,22 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 			}
 		}
 
+		// Amount with red/green coloring
 		amount := ""
 		if len(tx.Postings) > 0 && tx.Postings[0].Amount != nil {
 			amt := tx.Postings[0].Amount.Number.StringFixed(2)
 			commodity := tx.Postings[0].Amount.Commodity
-			amount = fmt.Sprintf("%s %s", amt, commodity)
+			amountText := fmt.Sprintf("%s %s", amt, commodity)
+
+			// Color based on positive/negative
+			if tx.Postings[0].Amount.Number.IsNegative() {
+				amount = theme.AmountNegativeStyle.Render(amountText)
+			} else {
+				amount = theme.AmountPositiveStyle.Render(amountText)
+			}
 		}
 
-		rows = append(rows, table.Row{dateStr, flag, description, account, amount})
+		rows = append(rows, table.Row{dateStr, flagStr, description, account, amount})
 	}
 
 	// Create table with TP7 styling and custom key bindings
