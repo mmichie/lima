@@ -206,7 +206,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Handle enter key for categorization
+		// Handle enter key for categorization (only when NOT showing picker)
 		if msg.String() == "enter" {
 			// Get categorization suggestions for current transaction
 			if m.categorizer != nil && m.totalTransactions > 0 {
@@ -218,16 +218,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.currentSuggestions = suggestions
 						m.showingPicker = true
 						m.pickerCursor = 0
+						return m, nil
 					}
 				}
 			}
+			// If no suggestions, still consume the enter key
 			return m, nil
 		}
-	}
 
-	// Delegate to table for navigation
-	m.table, cmd = m.table.Update(msg)
-	return m, cmd
+		// For all other keys, delegate to table (this handles j/k/arrows/pgup/pgdn/home/end)
+		m.table, cmd = m.table.Update(msg)
+		return m, cmd
+
+	default:
+		// For non-key messages, still delegate to table
+		m.table, cmd = m.table.Update(msg)
+		return m, cmd
+	}
 }
 
 // View renders the transactions view
