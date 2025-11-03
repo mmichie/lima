@@ -136,18 +136,15 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 		table.WithHeight(10),
 	)
 
-	// Add vim-style key bindings
-	km := table.DefaultKeyMap()
-	km.LineUp.SetKeys("k", "up")
-	km.LineDown.SetKeys("j", "down")
-	km.PageUp.SetKeys("ctrl+u", "pgup")
-	km.PageDown.SetKeys("ctrl+d", "pgdown")
-	km.HalfPageUp.SetKeys("ctrl+b")
-	km.HalfPageDown.SetKeys("ctrl+f")
-	km.GotoTop.SetKeys("g", "home")
-	km.GotoBottom.SetKeys("G", "end")
-
-	t.KeyMap = km
+	// Configure vim-style key bindings for the table
+	t.KeyMap.LineUp.SetKeys("k", "up")
+	t.KeyMap.LineDown.SetKeys("j", "down")
+	t.KeyMap.PageUp.SetKeys("ctrl+u", "pgup")
+	t.KeyMap.PageDown.SetKeys("ctrl+d", "pgdown")
+	t.KeyMap.HalfPageUp.SetKeys("ctrl+b")
+	t.KeyMap.HalfPageDown.SetKeys("ctrl+f")
+	t.KeyMap.GotoTop.SetKeys("g", "home")
+	t.KeyMap.GotoBottom.SetKeys("G", "end")
 
 	// Apply TP7 table styles
 	s := table.DefaultStyles()
@@ -265,8 +262,9 @@ func (m Model) View() string {
 		return title + "\n" + theme.NormalTextStyle.Render("No transactions found")
 	}
 
-	// Title with count
-	titleText := fmt.Sprintf("Transactions (%d total)", m.totalTransactions)
+	// Title with count and cursor position
+	cursor := m.table.Cursor()
+	titleText := fmt.Sprintf("Transactions (%d total) - Row %d/%d", m.totalTransactions, cursor+1, m.totalTransactions)
 	titlePadded := titleText
 	if m.width > len(titleText) {
 		titlePadded = titleText + strings.Repeat(" ", m.width-len(titleText))
