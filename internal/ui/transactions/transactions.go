@@ -148,20 +148,26 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 
 	// Apply TP7 table styles
 	s := table.DefaultStyles()
-	s.Header = s.Header.
+
+	// Header style
+	s.Header = lipgloss.NewStyle().
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color(theme.TP7Cyan)).
 		BorderBottom(true).
 		Foreground(lipgloss.Color(theme.TP7Yellow)).
 		Background(lipgloss.Color(theme.TP7Blue)).
 		Bold(true)
+
+	// IMPORTANT: Selected row - black on cyan (TP7 inverted)
+	// Use UnsetBackground on Cell so Selected background shows through
 	s.Selected = lipgloss.NewStyle().
 		Foreground(lipgloss.Color(theme.TP7Black)).
 		Background(lipgloss.Color(theme.TP7Cyan)).
 		Bold(false)
+
+	// Normal cell - white text, NO background (so table background shows through)
 	s.Cell = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(theme.TP7White)).
-		Background(lipgloss.Color(theme.TP7Blue))
+		Foreground(lipgloss.Color(theme.TP7White))
 
 	t.SetStyles(s)
 
