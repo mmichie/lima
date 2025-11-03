@@ -90,7 +90,7 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 		{Title: "Amount", Width: 15},
 	}
 
-	// Build rows from transactions with TP7 styling
+	// Build rows from transactions (plain strings, colors applied via styles)
 	rows := []table.Row{}
 	for i := 0; i < totalTransactions; i++ {
 		tx, err := file.GetTransaction(i)
@@ -98,16 +98,11 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 			continue
 		}
 
-		// Format transaction data with colors
-		dateStr := theme.DateStyle.Render(tx.Date.Format("2006-01-02"))
+		// Format transaction data as plain strings
+		dateStr := tx.Date.Format("2006-01-02")
 
-		// Flag with color
-		var flagStr string
-		if tx.Flag == "*" {
-			flagStr = theme.SuccessStyle.Render("*")
-		} else {
-			flagStr = theme.WarningStyle.Render("!")
-		}
+		// Flag
+		flagStr := tx.Flag
 
 		// Description
 		description := tx.Narration
@@ -127,19 +122,12 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 			}
 		}
 
-		// Amount with red/green coloring
+		// Amount
 		amount := ""
 		if len(tx.Postings) > 0 && tx.Postings[0].Amount != nil {
 			amt := tx.Postings[0].Amount.Number.StringFixed(2)
 			commodity := tx.Postings[0].Amount.Commodity
-			amountText := fmt.Sprintf("%s %s", amt, commodity)
-
-			// Color based on positive/negative
-			if tx.Postings[0].Amount.Number.IsNegative() {
-				amount = theme.AmountNegativeStyle.Render(amountText)
-			} else {
-				amount = theme.AmountPositiveStyle.Render(amountText)
-			}
+			amount = fmt.Sprintf("%s %s", amt, commodity)
 		}
 
 		rows = append(rows, table.Row{dateStr, flagStr, description, account, amount})
@@ -176,15 +164,15 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 		Bold(true)
 
 	// IMPORTANT: Selected row - black on cyan (TP7 inverted)
-	// Use UnsetBackground on Cell so Selected background shows through
 	s.Selected = lipgloss.NewStyle().
 		Foreground(lipgloss.Color(theme.TP7Black)).
 		Background(lipgloss.Color(theme.TP7Cyan)).
 		Bold(false)
 
-	// Normal cell - white text, NO background (so table background shows through)
+	// Normal cell - white text on blue background
 	s.Cell = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(theme.TP7White))
+		Foreground(lipgloss.Color(theme.TP7White)).
+		Background(lipgloss.Color(theme.TP7Blue))
 
 	t.SetStyles(s)
 
