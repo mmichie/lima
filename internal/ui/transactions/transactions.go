@@ -145,15 +145,18 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 		Foreground(lipgloss.Color(theme.TP7Yellow)).
 		Background(lipgloss.Color(theme.TP7Blue)).
 		Bold(true)
-	s.Selected = s.Selected.
+	s.Selected = lipgloss.NewStyle().
 		Foreground(lipgloss.Color(theme.TP7Black)).
 		Background(lipgloss.Color(theme.TP7Cyan)).
 		Bold(false)
-	s.Cell = s.Cell.
+	s.Cell = lipgloss.NewStyle().
 		Foreground(lipgloss.Color(theme.TP7White)).
 		Background(lipgloss.Color(theme.TP7Blue))
 
 	t.SetStyles(s)
+
+	// Enable focus to show selection
+	t.Focus()
 
 	return Model{
 		file:              file,
@@ -226,7 +229,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// For all other keys, delegate to table (this handles j/k/arrows/pgup/pgdn/home/end)
+		// Map j/k to arrow keys for vim-style navigation
+		switch msg.String() {
+		case "j":
+			m.table, cmd = m.table.Update(tea.KeyMsg{Type: tea.KeyDown})
+			return m, cmd
+		case "k":
+			m.table, cmd = m.table.Update(tea.KeyMsg{Type: tea.KeyUp})
+			return m, cmd
+		}
+
+		// For all other keys, delegate to table (arrows/pgup/pgdn/home/end/g/G)
 		m.table, cmd = m.table.Update(msg)
 		return m, cmd
 
