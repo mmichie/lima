@@ -243,6 +243,7 @@ func (m Model) View() string {
 	case DashboardView:
 		content = m.dashboard.View()
 	case TransactionsView:
+		// Don't wrap transactions view - table manages its own styling
 		content = m.transactions.View()
 	case AccountsView:
 		content = m.accounts.View()
@@ -251,8 +252,11 @@ func (m Model) View() string {
 	}
 
 	// Fill the content area with TP7 blue background to full height
+	// (except for TransactionsView which manages its own background)
 	contentHeight := m.height - 2 // Minus menu bar and status bar
-	content = renderFullScreenContent(content, m.width, contentHeight)
+	if m.currentView != TransactionsView {
+		content = renderFullScreenContent(content, m.width, contentHeight)
+	}
 
 	// Render TP7-style status bar
 	footer := renderFooter(m.currentView, m.statusBar)

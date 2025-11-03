@@ -163,11 +163,11 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 		Background(lipgloss.Color(theme.TP7Blue)).
 		Bold(true)
 
-	// IMPORTANT: Selected row - black on cyan (TP7 inverted)
+	// IMPORTANT: Selected row - black on cyan (TP7 inverted) - VERY OBVIOUS
 	s.Selected = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(theme.TP7Black)).
-		Background(lipgloss.Color(theme.TP7Cyan)).
-		Bold(false)
+		Foreground(lipgloss.Color("#000000")).
+		Background(lipgloss.Color("#00FFFF")).
+		Bold(true)
 
 	// Normal cell - white text on blue background
 	s.Cell = lipgloss.NewStyle().
@@ -207,6 +207,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "esc", "q":
 				m.showingPicker = false
 				m.pickerCursor = 0
+				m.table.Focus()
 				return m, nil
 
 			case "up", "k":
@@ -225,6 +226,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// TODO: Apply selected category to transaction
 				m.showingPicker = false
 				m.pickerCursor = 0
+				m.table.Focus()
 				return m, nil
 			}
 			return m, nil
@@ -252,6 +254,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Delegate all other keys to table (j/k/arrows/pgup/pgdn/home/end/g/G)
 		m.table, cmd = m.table.Update(msg)
+		m.table.Focus() // Ensure focus is maintained
 		return m, cmd
 
 	default:
