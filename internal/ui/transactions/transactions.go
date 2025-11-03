@@ -324,8 +324,9 @@ func (m Model) renderTransactionLine(tx *beancount.Transaction, selected bool) s
 
 // renderCategoryPicker renders the category picker overlay with TP7 styling
 func (m Model) renderCategoryPicker() string {
+	// Use TP7 double-line box drawing characters
 	pickerStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		Border(lipgloss.DoubleBorder()).
 		BorderForeground(lipgloss.Color(theme.TP7Cyan)).
 		BorderBackground(lipgloss.Color(theme.TP7Blue)).
 		Background(lipgloss.Color(theme.TP7Blue)).

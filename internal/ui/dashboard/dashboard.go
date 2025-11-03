@@ -8,7 +8,6 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mmichie/lima/internal/beancount"
 	"github.com/mmichie/lima/internal/ui/theme"
-	"github.com/shopspring/decimal"
 )
 
 // Model represents the dashboard view model
@@ -80,8 +79,9 @@ func (m Model) SetSize(width, height int) Model {
 
 // renderStats renders the statistics boxes with TP7 styling
 func (m Model) renderStats() string {
+	// Use TP7 double-line box drawing characters
 	boxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
+		Border(lipgloss.DoubleBorder()).
 		BorderForeground(lipgloss.Color(theme.TP7Cyan)).
 		BorderBackground(lipgloss.Color(theme.TP7Blue)).
 		Background(lipgloss.Color(theme.TP7Blue)).
@@ -121,7 +121,9 @@ func (m Model) renderStats() string {
 // renderRecentTransactions renders the most recent transactions with TP7 styling
 func (m Model) renderRecentTransactions() string {
 	var lines []string
+	lines = append(lines, "")
 	lines = append(lines, theme.TitleStyle.Render("Recent Transactions"))
+	lines = append(lines, "")
 
 	count := m.recentCount
 	if count > m.totalTransactions {
@@ -146,18 +148,6 @@ func (m Model) renderRecentTransactions() string {
 			description = description[:47] + "..."
 		}
 
-		// Get total amount (sum of all postings)
-		var total decimal.Decimal
-		var commodity string
-		for _, posting := range tx.Postings {
-			if posting.Amount != nil {
-				total = total.Add(posting.Amount.Number)
-				if commodity == "" {
-					commodity = posting.Amount.Commodity
-				}
-			}
-		}
-
 		// Format flag with TP7 colors
 		flagStr := tx.Flag
 		if tx.Flag == "*" {
@@ -166,7 +156,7 @@ func (m Model) renderRecentTransactions() string {
 			flagStr = theme.WarningStyle.Render("!")
 		}
 
-		// Format the line
+		// Format the line - simple text on blue background
 		line := fmt.Sprintf("  %s  %-50s  %s",
 			theme.DateStyle.Render(dateStr),
 			theme.NormalTextStyle.Render(description),
