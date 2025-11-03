@@ -42,28 +42,29 @@ var (
 			Background(lipgloss.Color(TP7Blue)).
 			Foreground(lipgloss.Color(TP7White))
 
-	// Menu bar style (top of screen)
+	// Menu bar style (top of screen) - TP7 style: cyan background, black text
 	MenuBarStyle = lipgloss.NewStyle().
-			Background(lipgloss.Color(TP7Blue)).
-			Foreground(lipgloss.Color(TP7Cyan)).
+			Background(lipgloss.Color(TP7Cyan)).
+			Foreground(lipgloss.Color(TP7Black)).
 			Bold(false)
 
-	// Active menu item (when selected/hovered)
+	// Active menu item (when selected/hovered) - inverted: black background, white text
 	MenuItemActiveStyle = lipgloss.NewStyle().
+				Background(lipgloss.Color(TP7Black)).
+				Foreground(lipgloss.Color(TP7White)).
+				Bold(false)
+
+	// Inactive menu item - same as menu bar
+	MenuItemInactiveStyle = lipgloss.NewStyle().
 				Background(lipgloss.Color(TP7Cyan)).
 				Foreground(lipgloss.Color(TP7Black)).
 				Bold(false)
 
-	// Inactive menu item
-	MenuItemInactiveStyle = lipgloss.NewStyle().
-				Background(lipgloss.Color(TP7Blue)).
-				Foreground(lipgloss.Color(TP7White)).
-				Bold(false)
-
-	// Hotkey letter in menu (underlined)
+	// Hotkey letter in menu (underlined) - white text on cyan background
 	MenuHotkeyStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color(TP7Yellow)).
-			Bold(false)
+			Foreground(lipgloss.Color(TP7White)).
+			Background(lipgloss.Color(TP7Cyan)).
+			Bold(true)
 
 	// Status bar style (bottom of screen)
 	StatusBarStyle = lipgloss.NewStyle().

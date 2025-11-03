@@ -188,11 +188,12 @@ func renderMenuWithHotkey(label string, hotkey rune, active bool) string {
 			// Render hotkey with special style
 			hotkeyStyle := theme.MenuHotkeyStyle
 			if active {
-				// When menu is active, still show yellow on the inverted background
+				// When menu is active, bright white on black background
 				hotkeyStyle = lipgloss.NewStyle().
-					Foreground(lipgloss.Color(theme.TP7Yellow)).
-					Background(lipgloss.Color(theme.TP7Cyan)).
-					Underline(true)
+					Foreground(lipgloss.Color(theme.TP7White)).
+					Background(lipgloss.Color(theme.TP7Black)).
+					Underline(true).
+					Bold(true)
 			} else {
 				hotkeyStyle = hotkeyStyle.Underline(true)
 			}
