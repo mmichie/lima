@@ -203,8 +203,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	var lines []string
 
-	// Title with count using TP7 style
-	title := theme.TitleStyle.Render(fmt.Sprintf("Transactions (%d total)", m.totalTransactions))
+	// Title with count using TP7 style - fill full width
+	titleText := fmt.Sprintf("Transactions (%d total)", m.totalTransactions)
+	titlePadded := titleText
+	if m.width > len(titleText) {
+		titlePadded = titleText + strings.Repeat(" ", m.width-len(titleText))
+	}
+	title := theme.TitleStyle.Width(m.width).Render(titlePadded)
 	lines = append(lines, title)
 
 	if m.totalTransactions == 0 {
@@ -262,64 +267,98 @@ func (m Model) renderTransactionLine(tx *beancount.Transaction, selected bool) s
 	// Flag
 	var flagStr string
 	if tx.Flag == "*" {
-		flagStr = theme.SuccessStyle.Render("*")
+		flagStr = "*"
 	} else {
-		flagStr = theme.WarningStyle.Render("!")
+		flagStr = "!"
 	}
 
-	// Description
+	// Description (payee)
 	description := tx.Narration
 	if tx.Payee != "" {
 		description = tx.Payee
-		if len(description) > 30 {
-			description = description[:27] + "..."
-		}
 	}
-
-	// Get first posting amount for summary
-	var amountStr string
-	if len(tx.Postings) > 0 && tx.Postings[0].Amount != nil {
-		amount := tx.Postings[0].Amount.Number.StringFixed(2)
-		commodity := tx.Postings[0].Amount.Commodity
-
-		if tx.Postings[0].Amount.Number.IsNegative() {
-			amountStr = theme.AmountNegativeStyle.Render(fmt.Sprintf("%s %s", amount, commodity))
-		} else {
-			amountStr = theme.AmountPositiveStyle.Render(fmt.Sprintf("%s %s", amount, commodity))
-		}
+	// Calculate available space for description
+	descWidth := 40
+	if len(description) > descWidth {
+		description = description[:descWidth-3] + "..."
 	}
 
 	// Account (first posting)
 	account := ""
 	if len(tx.Postings) > 0 {
 		account = tx.Postings[0].Account
-		if len(account) > 35 {
-			account = "..." + account[len(account)-32:]
-		}
+	}
+	// Calculate available space for account
+	accountWidth := 45
+	if len(account) > accountWidth {
+		account = "..." + account[len(account)-accountWidth+3:]
 	}
 
-	// Format the line with TP7 colors
-	if selected {
-		// Selected line: black on cyan (TP7 style)
-		line := fmt.Sprintf("  %s %s %-30s %-35s %s",
-			dateStr,
-			flagStr,
-			description,
-			account,
-			amountStr,
-		)
-		return theme.SelectedItemStyle.Render(line)
+	// Get first posting amount for summary
+	var amountStr string
+	var amountRaw string
+	if len(tx.Postings) > 0 && tx.Postings[0].Amount != nil {
+		amount := tx.Postings[0].Amount.Number.StringFixed(2)
+		commodity := tx.Postings[0].Amount.Commodity
+		amountRaw = fmt.Sprintf("%s %s", amount, commodity)
+		amountStr = amountRaw
 	}
 
-	// Normal line: white on blue
-	line := fmt.Sprintf("  %s %s %-30s %-35s %s",
-		theme.DateStyle.Render(dateStr),
+	// Build line with proper spacing
+	line := fmt.Sprintf("%s %s %-*s %-*s %15s",
+		dateStr,
 		flagStr,
+		descWidth,
 		description,
+		accountWidth,
 		account,
 		amountStr,
 	)
-	return theme.ListItemStyle.Render(line)
+
+	// Pad line to full width
+	lineLen := len(line)
+	if m.width > lineLen {
+		line = line + strings.Repeat(" ", m.width-lineLen)
+	}
+
+	// Apply styling
+	if selected {
+		// Selected line: black on cyan (TP7 style) - fill entire width
+		return theme.SelectedItemStyle.Width(m.width).Render(line)
+	}
+
+	// Normal line: styled with colors, full width
+	styledLine := fmt.Sprintf("%s %s %-*s %-*s %15s",
+		theme.DateStyle.Render(dateStr),
+		theme.WarningStyle.Render(flagStr),
+		descWidth,
+		theme.NormalTextStyle.Render(description),
+		accountWidth,
+		theme.NormalTextStyle.Render(account),
+		formatTransactionAmount(amountRaw),
+	)
+
+	// Pad to full width
+	styledLen := lipgloss.Width(styledLine)
+	if m.width > styledLen {
+		styledLine = styledLine + theme.ListItemStyle.Render(strings.Repeat(" ", m.width-styledLen))
+	}
+
+	// Use alternating background for visual structure (every other row)
+	style := theme.ListItemStyle
+	// We could add alternating here if desired, but let's keep it simple for now
+	return style.Width(m.width).Render(styledLine)
+}
+
+// formatTransactionAmount formats an amount with proper coloring
+func formatTransactionAmount(amount string) string {
+	if amount == "" {
+		return ""
+	}
+	if strings.HasPrefix(amount, "-") {
+		return theme.AmountNegativeStyle.Render(amount)
+	}
+	return theme.AmountPositiveStyle.Render(amount)
 }
 
 // renderCategoryPicker renders the category picker overlay with TP7 styling

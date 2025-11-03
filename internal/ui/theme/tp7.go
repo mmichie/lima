@@ -8,6 +8,7 @@ import "github.com/charmbracelet/lipgloss"
 // Color Constants - Classic TP7 Palette
 const (
 	TP7Blue       = "#0000AA" // Classic TP7 background blue
+	TP7DarkBlue   = "#000088" // Slightly darker blue for alternating rows
 	TP7Cyan       = "#00FFFF" // Menu bar and highlights
 	TP7Black      = "#000000" // Selection background (inverted)
 	TP7White      = "#FFFFFF" // Primary text
@@ -102,6 +103,11 @@ var (
 	ListItemStyle = lipgloss.NewStyle().
 			Foreground(lipgloss.Color(TP7White)).
 			Background(lipgloss.Color(TP7Blue))
+
+	// Alternate list item (for striping/alternating rows)
+	AlternateItemStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.Color(TP7White)).
+				Background(lipgloss.Color(TP7DarkBlue))
 
 	// Highlighted/focused element
 	HighlightStyle = lipgloss.NewStyle().

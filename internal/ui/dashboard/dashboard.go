@@ -50,8 +50,13 @@ func (m Model) View() string {
 		return theme.NormalTextStyle.Render("Loading dashboard...")
 	}
 
-	// Title
-	title := theme.TitleStyle.Render("Dashboard")
+	// Title - fill full width
+	titleText := "Dashboard"
+	titlePadded := titleText
+	if m.width > len(titleText) {
+		titlePadded = titleText + strings.Repeat(" ", m.width-len(titleText))
+	}
+	title := theme.TitleStyle.Width(m.width).Render(titlePadded)
 
 	// Statistics boxes
 	stats := m.renderStats()
@@ -122,7 +127,14 @@ func (m Model) renderStats() string {
 func (m Model) renderRecentTransactions() string {
 	var lines []string
 	lines = append(lines, "")
-	lines = append(lines, theme.TitleStyle.Render("Recent Transactions"))
+
+	// Title - fill full width
+	titleText := "Recent Transactions"
+	titlePadded := titleText
+	if m.width > len(titleText) {
+		titlePadded = titleText + strings.Repeat(" ", m.width-len(titleText))
+	}
+	lines = append(lines, theme.TitleStyle.Width(m.width).Render(titlePadded))
 	lines = append(lines, "")
 
 	count := m.recentCount
@@ -156,14 +168,20 @@ func (m Model) renderRecentTransactions() string {
 			flagStr = theme.WarningStyle.Render("!")
 		}
 
-		// Format the line - simple text on blue background
+		// Format the line - simple text on blue background, fill full width
 		line := fmt.Sprintf("  %s  %-50s  %s",
 			theme.DateStyle.Render(dateStr),
 			theme.NormalTextStyle.Render(description),
 			flagStr,
 		)
 
-		lines = append(lines, line)
+		// Pad to full width
+		lineLen := lipgloss.Width(line)
+		if m.width > lineLen {
+			line = line + theme.ListItemStyle.Render(strings.Repeat(" ", m.width-lineLen))
+		}
+
+		lines = append(lines, theme.ListItemStyle.Width(m.width).Render(line))
 	}
 
 	if m.totalTransactions == 0 {

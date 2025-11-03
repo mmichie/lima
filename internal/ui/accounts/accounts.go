@@ -126,8 +126,13 @@ func (m Model) View() string {
 
 	var lines []string
 
-	// Title
-	title := theme.TitleStyle.Render(fmt.Sprintf("Accounts (%d total)", len(m.accounts)))
+	// Title - fill full width
+	titleText := fmt.Sprintf("Accounts (%d total)", len(m.accounts))
+	titlePadded := titleText
+	if m.width > len(titleText) {
+		titlePadded = titleText + strings.Repeat(" ", m.width-len(titleText))
+	}
+	title := theme.TitleStyle.Width(m.width).Render(titlePadded)
 	lines = append(lines, title)
 
 	if len(m.accounts) == 0 {
@@ -139,27 +144,52 @@ func (m Model) View() string {
 	currentIdx := 0
 
 	if len(m.assets) > 0 {
-		lines = append(lines, theme.HighlightStyle.Render("Assets"))
+		lines = append(lines, "")
+		categoryLine := "Assets"
+		if m.width > len(categoryLine) {
+			categoryLine = categoryLine + strings.Repeat(" ", m.width-len(categoryLine))
+		}
+		lines = append(lines, theme.HighlightStyle.Width(m.width).Render(categoryLine))
 		currentIdx = m.renderAccountGroup(m.assets, currentIdx, &lines)
 	}
 
 	if len(m.liabilities) > 0 {
-		lines = append(lines, theme.HighlightStyle.Render("Liabilities"))
+		lines = append(lines, "")
+		categoryLine := "Liabilities"
+		if m.width > len(categoryLine) {
+			categoryLine = categoryLine + strings.Repeat(" ", m.width-len(categoryLine))
+		}
+		lines = append(lines, theme.HighlightStyle.Width(m.width).Render(categoryLine))
 		currentIdx = m.renderAccountGroup(m.liabilities, currentIdx, &lines)
 	}
 
 	if len(m.equity) > 0 {
-		lines = append(lines, theme.HighlightStyle.Render("Equity"))
+		lines = append(lines, "")
+		categoryLine := "Equity"
+		if m.width > len(categoryLine) {
+			categoryLine = categoryLine + strings.Repeat(" ", m.width-len(categoryLine))
+		}
+		lines = append(lines, theme.HighlightStyle.Width(m.width).Render(categoryLine))
 		currentIdx = m.renderAccountGroup(m.equity, currentIdx, &lines)
 	}
 
 	if len(m.income) > 0 {
-		lines = append(lines, theme.HighlightStyle.Render("Income"))
+		lines = append(lines, "")
+		categoryLine := "Income"
+		if m.width > len(categoryLine) {
+			categoryLine = categoryLine + strings.Repeat(" ", m.width-len(categoryLine))
+		}
+		lines = append(lines, theme.HighlightStyle.Width(m.width).Render(categoryLine))
 		currentIdx = m.renderAccountGroup(m.income, currentIdx, &lines)
 	}
 
 	if len(m.expenses) > 0 {
-		lines = append(lines, theme.HighlightStyle.Render("Expenses"))
+		lines = append(lines, "")
+		categoryLine := "Expenses"
+		if m.width > len(categoryLine) {
+			categoryLine = categoryLine + strings.Repeat(" ", m.width-len(categoryLine))
+		}
+		lines = append(lines, theme.HighlightStyle.Width(m.width).Render(categoryLine))
 		currentIdx = m.renderAccountGroup(m.expenses, currentIdx, &lines)
 	}
 
@@ -177,10 +207,21 @@ func (m Model) SetSize(width, height int) Model {
 func (m Model) renderAccountGroup(accounts []string, startIdx int, lines *[]string) int {
 	idx := startIdx
 	for _, acc := range accounts {
+		var line string
 		if idx == m.cursor {
-			*lines = append(*lines, theme.SelectedItemStyle.Render("  > "+acc))
+			line = "  > " + acc
+			// Pad to full width
+			if m.width > len(line) {
+				line = line + strings.Repeat(" ", m.width-len(line))
+			}
+			*lines = append(*lines, theme.SelectedItemStyle.Width(m.width).Render(line))
 		} else {
-			*lines = append(*lines, theme.ListItemStyle.Render("    "+acc))
+			line = "    " + acc
+			// Pad to full width
+			if m.width > len(line) {
+				line = line + strings.Repeat(" ", m.width-len(line))
+			}
+			*lines = append(*lines, theme.ListItemStyle.Width(m.width).Render(line))
 		}
 		idx++
 	}
