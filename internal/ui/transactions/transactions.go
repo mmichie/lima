@@ -128,13 +128,26 @@ func New(file *beancount.File, cat *categorizer.Categorizer) Model {
 		rows = append(rows, table.Row{dateStr, flag, description, account, amount})
 	}
 
-	// Create table with TP7 styling
+	// Create table with TP7 styling and custom key bindings
 	t := table.New(
 		table.WithColumns(columns),
 		table.WithRows(rows),
 		table.WithFocused(true),
 		table.WithHeight(10),
 	)
+
+	// Add vim-style key bindings
+	km := table.DefaultKeyMap()
+	km.LineUp.SetKeys("k", "up")
+	km.LineDown.SetKeys("j", "down")
+	km.PageUp.SetKeys("ctrl+u", "pgup")
+	km.PageDown.SetKeys("ctrl+d", "pgdown")
+	km.HalfPageUp.SetKeys("ctrl+b")
+	km.HalfPageDown.SetKeys("ctrl+f")
+	km.GotoTop.SetKeys("g", "home")
+	km.GotoBottom.SetKeys("G", "end")
+
+	t.KeyMap = km
 
 	// Apply TP7 table styles
 	s := table.DefaultStyles()
@@ -229,17 +242,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Map j/k to arrow keys for vim-style navigation
-		switch msg.String() {
-		case "j":
-			m.table, cmd = m.table.Update(tea.KeyMsg{Type: tea.KeyDown})
-			return m, cmd
-		case "k":
-			m.table, cmd = m.table.Update(tea.KeyMsg{Type: tea.KeyUp})
-			return m, cmd
-		}
-
-		// For all other keys, delegate to table (arrows/pgup/pgdn/home/end/g/G)
+		// Delegate all other keys to table (j/k/arrows/pgup/pgdn/home/end/g/G)
 		m.table, cmd = m.table.Update(msg)
 		return m, cmd
 
