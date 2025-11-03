@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mmichie/lima/internal/beancount"
@@ -63,10 +64,9 @@ type Model struct {
 	width       int
 	height      int
 
-	// List state
-	cursor int
-	offset int
-	keys   keyMap
+	// Native table component
+	table table.Model
+	keys  keyMap
 
 	// Category picker state
 	showingPicker      bool
@@ -79,13 +79,88 @@ type Model struct {
 
 // New creates a new transactions model
 func New(file *beancount.File, cat *categorizer.Categorizer) Model {
+	totalTransactions := file.TransactionCount()
+
+	// Define table columns
+	columns := []table.Column{
+		{Title: "Date", Width: 12},
+		{Title: "", Width: 1},
+		{Title: "Description", Width: 40},
+		{Title: "Account", Width: 45},
+		{Title: "Amount", Width: 15},
+	}
+
+	// Build rows from transactions
+	rows := []table.Row{}
+	for i := 0; i < totalTransactions; i++ {
+		tx, err := file.GetTransaction(i)
+		if err != nil {
+			continue
+		}
+
+		// Format transaction data
+		dateStr := tx.Date.Format("2006-01-02")
+		flag := tx.Flag
+
+		description := tx.Narration
+		if tx.Payee != "" {
+			description = tx.Payee
+		}
+		if len(description) > 40 {
+			description = description[:37] + "..."
+		}
+
+		account := ""
+		if len(tx.Postings) > 0 {
+			account = tx.Postings[0].Account
+			if len(account) > 45 {
+				account = "..." + account[len(account)-42:]
+			}
+		}
+
+		amount := ""
+		if len(tx.Postings) > 0 && tx.Postings[0].Amount != nil {
+			amt := tx.Postings[0].Amount.Number.StringFixed(2)
+			commodity := tx.Postings[0].Amount.Commodity
+			amount = fmt.Sprintf("%s %s", amt, commodity)
+		}
+
+		rows = append(rows, table.Row{dateStr, flag, description, account, amount})
+	}
+
+	// Create table with TP7 styling
+	t := table.New(
+		table.WithColumns(columns),
+		table.WithRows(rows),
+		table.WithFocused(true),
+		table.WithHeight(10),
+	)
+
+	// Apply TP7 table styles
+	s := table.DefaultStyles()
+	s.Header = s.Header.
+		BorderStyle(lipgloss.NormalBorder()).
+		BorderForeground(lipgloss.Color(theme.TP7Cyan)).
+		BorderBottom(true).
+		Foreground(lipgloss.Color(theme.TP7Yellow)).
+		Background(lipgloss.Color(theme.TP7Blue)).
+		Bold(true)
+	s.Selected = s.Selected.
+		Foreground(lipgloss.Color(theme.TP7Black)).
+		Background(lipgloss.Color(theme.TP7Cyan)).
+		Bold(false)
+	s.Cell = s.Cell.
+		Foreground(lipgloss.Color(theme.TP7White)).
+		Background(lipgloss.Color(theme.TP7Blue))
+
+	t.SetStyles(s)
+
 	return Model{
 		file:              file,
 		categorizer:       cat,
-		cursor:            0,
-		offset:            0,
+		table:             t,
 		keys:              newKeyMap(),
-		totalTransactions: file.TransactionCount(),
+		totalTransactions: totalTransactions,
 		showingPicker:     false,
 		pickerCursor:      0,
 	}
@@ -98,6 +173,8 @@ func (m Model) Init() tea.Cmd {
 
 // Update handles messages
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		// If category picker is showing, handle picker navigation
@@ -129,61 +206,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 
-		// Normal navigation
-		switch {
-		case key.Matches(msg, m.keys.Up):
-			if m.cursor > 0 {
-				m.cursor--
-				// Scroll up if cursor moves above viewport
-				if m.cursor < m.offset {
-					m.offset = m.cursor
-				}
-			}
-
-		case key.Matches(msg, m.keys.Down):
-			if m.cursor < m.totalTransactions-1 {
-				m.cursor++
-				// Scroll down if cursor moves below viewport
-				maxVisible := m.height - 3 // Account for title and padding
-				if m.cursor >= m.offset+maxVisible {
-					m.offset = m.cursor - maxVisible + 1
-				}
-			}
-
-		case key.Matches(msg, m.keys.PageUp):
-			pageSize := m.height - 3
-			m.cursor -= pageSize
-			if m.cursor < 0 {
-				m.cursor = 0
-			}
-			m.offset = m.cursor
-
-		case key.Matches(msg, m.keys.PageDown):
-			pageSize := m.height - 3
-			m.cursor += pageSize
-			if m.cursor >= m.totalTransactions {
-				m.cursor = m.totalTransactions - 1
-			}
-			m.offset = m.cursor - (m.height - 4)
-			if m.offset < 0 {
-				m.offset = 0
-			}
-
-		case key.Matches(msg, m.keys.Top):
-			m.cursor = 0
-			m.offset = 0
-
-		case key.Matches(msg, m.keys.Bottom):
-			m.cursor = m.totalTransactions - 1
-			m.offset = m.cursor - (m.height - 4)
-			if m.offset < 0 {
-				m.offset = 0
-			}
-
-		case key.Matches(msg, m.keys.Enter):
+		// Handle enter key for categorization
+		if msg.String() == "enter" {
 			// Get categorization suggestions for current transaction
 			if m.categorizer != nil && m.totalTransactions > 0 {
-				tx, err := m.file.GetTransaction(m.cursor)
+				cursor := m.table.Cursor()
+				tx, err := m.file.GetTransaction(cursor)
 				if err == nil {
 					suggestions, err := m.categorizer.SuggestAll(tx)
 					if err == nil && len(suggestions) > 0 {
@@ -193,66 +221,39 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			}
+			return m, nil
 		}
 	}
 
-	return m, nil
+	// Delegate to table for navigation
+	m.table, cmd = m.table.Update(msg)
+	return m, cmd
 }
 
 // View renders the transactions view
 func (m Model) View() string {
-	var lines []string
+	if m.totalTransactions == 0 {
+		titleText := "Transactions (0 total)"
+		titlePadded := titleText
+		if m.width > len(titleText) {
+			titlePadded = titleText + strings.Repeat(" ", m.width-len(titleText))
+		}
+		title := theme.TitleStyle.Width(m.width).Render(titlePadded)
+		return title + "\n" + theme.NormalTextStyle.Render("No transactions found")
+	}
 
-	// Title with count using TP7 style - fill full width
+	// Title with count
 	titleText := fmt.Sprintf("Transactions (%d total)", m.totalTransactions)
 	titlePadded := titleText
 	if m.width > len(titleText) {
 		titlePadded = titleText + strings.Repeat(" ", m.width-len(titleText))
 	}
 	title := theme.TitleStyle.Width(m.width).Render(titlePadded)
-	lines = append(lines, title)
-	lines = append(lines, "")
 
-	if m.totalTransactions == 0 {
-		lines = append(lines, theme.NormalTextStyle.Render("No transactions found"))
-		return strings.Join(lines, "\n")
-	}
+	// Render table
+	tableView := m.table.View()
 
-	// Add table header
-	header := m.renderTableHeader()
-	lines = append(lines, header)
-
-	// Add separator line
-	separator := m.renderSeparatorLine()
-	lines = append(lines, separator)
-
-	// Calculate visible range
-	// Account for: title + blank line + header + separator + data lines
-	// Default to showing at least 10 transactions if height not set
-	maxVisible := m.height - 5 // -5 for title, blank, header, separator, and padding
-	if maxVisible <= 0 {
-		maxVisible = 10
-	}
-	endIdx := m.offset + maxVisible
-	if endIdx > m.totalTransactions {
-		endIdx = m.totalTransactions
-	}
-
-	// Render visible transactions
-	for i := m.offset; i < endIdx; i++ {
-		tx, err := m.file.GetTransaction(i)
-		if err != nil {
-			// Show error instead of silently skipping
-			errMsg := fmt.Sprintf("Error loading transaction %d: %v", i, err)
-			lines = append(lines, theme.ErrorStyle.Render(errMsg))
-			continue
-		}
-
-		line := m.renderTransactionLine(tx, i == m.cursor)
-		lines = append(lines, line)
-	}
-
-	view := strings.Join(lines, "\n")
+	view := title + "\n\n" + tableView
 
 	// Show category picker overlay if active
 	if m.showingPicker {
@@ -266,140 +267,15 @@ func (m Model) View() string {
 func (m Model) SetSize(width, height int) Model {
 	m.width = width
 	m.height = height
+
+	// Update table height (account for title and padding)
+	tableHeight := height - 4
+	if tableHeight < 5 {
+		tableHeight = 5
+	}
+	m.table.SetHeight(tableHeight)
+
 	return m
-}
-
-// renderTransactionLine renders a single transaction line with TP7 styling
-func (m Model) renderTransactionLine(tx *beancount.Transaction, selected bool) string {
-	// Date
-	dateStr := tx.Date.Format("2006-01-02")
-
-	// Flag
-	var flagStr string
-	if tx.Flag == "*" {
-		flagStr = "*"
-	} else {
-		flagStr = "!"
-	}
-
-	// Description (payee)
-	description := tx.Narration
-	if tx.Payee != "" {
-		description = tx.Payee
-	}
-	// Calculate available space for description
-	descWidth := 40
-	if len(description) > descWidth {
-		description = description[:descWidth-3] + "..."
-	}
-
-	// Account (first posting)
-	account := ""
-	if len(tx.Postings) > 0 {
-		account = tx.Postings[0].Account
-	}
-	// Calculate available space for account
-	accountWidth := 45
-	if len(account) > accountWidth {
-		account = "..." + account[len(account)-accountWidth+3:]
-	}
-
-	// Get first posting amount for summary
-	var amountStr string
-	var amountRaw string
-	if len(tx.Postings) > 0 && tx.Postings[0].Amount != nil {
-		amount := tx.Postings[0].Amount.Number.StringFixed(2)
-		commodity := tx.Postings[0].Amount.Commodity
-		amountRaw = fmt.Sprintf("%s %s", amount, commodity)
-		amountStr = amountRaw
-	}
-
-	// Build line with proper spacing and column separators
-	line := fmt.Sprintf("%s │ %s │ %-*s │ %-*s │ %15s",
-		dateStr,
-		flagStr,
-		descWidth,
-		description,
-		accountWidth,
-		account,
-		amountStr,
-	)
-
-	// Pad line to full width
-	lineLen := len(line)
-	if m.width > lineLen {
-		line = line + strings.Repeat(" ", m.width-lineLen)
-	}
-
-	// Apply styling
-	if selected {
-		// Selected line: black on cyan (TP7 style) - fill entire width
-		return theme.SelectedItemStyle.Width(m.width).Render(line)
-	}
-
-	// Normal line: styled with colors, full width
-	styledLine := fmt.Sprintf("%s │ %s │ %-*s │ %-*s │ %15s",
-		theme.DateStyle.Render(dateStr),
-		theme.WarningStyle.Render(flagStr),
-		descWidth,
-		theme.NormalTextStyle.Render(description),
-		accountWidth,
-		theme.NormalTextStyle.Render(account),
-		formatTransactionAmount(amountRaw),
-	)
-
-	// Pad to full width
-	styledLen := lipgloss.Width(styledLine)
-	if m.width > styledLen {
-		styledLine = styledLine + theme.ListItemStyle.Render(strings.Repeat(" ", m.width-styledLen))
-	}
-
-	// Use alternating background for visual structure (every other row)
-	style := theme.ListItemStyle
-	// We could add alternating here if desired, but let's keep it simple for now
-	return style.Width(m.width).Render(styledLine)
-}
-
-// formatTransactionAmount formats an amount with proper coloring
-func formatTransactionAmount(amount string) string {
-	if amount == "" {
-		return ""
-	}
-	if strings.HasPrefix(amount, "-") {
-		return theme.AmountNegativeStyle.Render(amount)
-	}
-	return theme.AmountPositiveStyle.Render(amount)
-}
-
-// renderTableHeader renders the column headers for the transaction table
-func (m Model) renderTableHeader() string {
-	descWidth := 40
-	accountWidth := 45
-
-	header := fmt.Sprintf("%-12s │ %-1s │ %-*s │ %-*s │ %15s",
-		"Date",
-		"",
-		descWidth,
-		"Description",
-		accountWidth,
-		"Account",
-		"Amount",
-	)
-
-	// Pad to full width
-	headerLen := lipgloss.Width(header)
-	if m.width > headerLen {
-		header = header + strings.Repeat(" ", m.width-headerLen)
-	}
-
-	return theme.HighlightStyle.Width(m.width).Render(header)
-}
-
-// renderSeparatorLine renders a separator line for the table
-func (m Model) renderSeparatorLine() string {
-	// Use ─ character for horizontal line
-	line := strings.Repeat("─", m.width)
-	return theme.MutedTextStyle.Width(m.width).Render(line)
 }
 
 // renderCategoryPicker renders the category picker overlay with TP7 styling
