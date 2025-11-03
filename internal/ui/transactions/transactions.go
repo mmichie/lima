@@ -211,15 +211,25 @@ func (m Model) View() string {
 	}
 	title := theme.TitleStyle.Width(m.width).Render(titlePadded)
 	lines = append(lines, title)
+	lines = append(lines, "")
 
 	if m.totalTransactions == 0 {
 		lines = append(lines, theme.NormalTextStyle.Render("No transactions found"))
 		return strings.Join(lines, "\n")
 	}
 
+	// Add table header
+	header := m.renderTableHeader()
+	lines = append(lines, header)
+
+	// Add separator line
+	separator := m.renderSeparatorLine()
+	lines = append(lines, separator)
+
 	// Calculate visible range
+	// Account for: title + blank line + header + separator + data lines
 	// Default to showing at least 10 transactions if height not set
-	maxVisible := m.height - 3
+	maxVisible := m.height - 5 // -5 for title, blank, header, separator, and padding
 	if maxVisible <= 0 {
 		maxVisible = 10
 	}
@@ -304,8 +314,8 @@ func (m Model) renderTransactionLine(tx *beancount.Transaction, selected bool) s
 		amountStr = amountRaw
 	}
 
-	// Build line with proper spacing
-	line := fmt.Sprintf("%s %s %-*s %-*s %15s",
+	// Build line with proper spacing and column separators
+	line := fmt.Sprintf("%s │ %s │ %-*s │ %-*s │ %15s",
 		dateStr,
 		flagStr,
 		descWidth,
@@ -328,7 +338,7 @@ func (m Model) renderTransactionLine(tx *beancount.Transaction, selected bool) s
 	}
 
 	// Normal line: styled with colors, full width
-	styledLine := fmt.Sprintf("%s %s %-*s %-*s %15s",
+	styledLine := fmt.Sprintf("%s │ %s │ %-*s │ %-*s │ %15s",
 		theme.DateStyle.Render(dateStr),
 		theme.WarningStyle.Render(flagStr),
 		descWidth,
@@ -359,6 +369,37 @@ func formatTransactionAmount(amount string) string {
 		return theme.AmountNegativeStyle.Render(amount)
 	}
 	return theme.AmountPositiveStyle.Render(amount)
+}
+
+// renderTableHeader renders the column headers for the transaction table
+func (m Model) renderTableHeader() string {
+	descWidth := 40
+	accountWidth := 45
+
+	header := fmt.Sprintf("%-12s │ %-1s │ %-*s │ %-*s │ %15s",
+		"Date",
+		"",
+		descWidth,
+		"Description",
+		accountWidth,
+		"Account",
+		"Amount",
+	)
+
+	// Pad to full width
+	headerLen := lipgloss.Width(header)
+	if m.width > headerLen {
+		header = header + strings.Repeat(" ", m.width-headerLen)
+	}
+
+	return theme.HighlightStyle.Width(m.width).Render(header)
+}
+
+// renderSeparatorLine renders a separator line for the table
+func (m Model) renderSeparatorLine() string {
+	// Use ─ character for horizontal line
+	line := strings.Repeat("─", m.width)
+	return theme.MutedTextStyle.Width(m.width).Render(line)
 }
 
 // renderCategoryPicker renders the category picker overlay with TP7 styling
