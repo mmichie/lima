@@ -150,6 +150,9 @@ func (m Model) View() string {
 			categoryLine = categoryLine + strings.Repeat(" ", m.width-len(categoryLine))
 		}
 		lines = append(lines, theme.HighlightStyle.Width(m.width).Render(categoryLine))
+		// Add separator line
+		separator := strings.Repeat("─", m.width)
+		lines = append(lines, theme.MutedTextStyle.Width(m.width).Render(separator))
 		currentIdx = m.renderAccountGroup(m.assets, currentIdx, &lines)
 	}
 
@@ -160,6 +163,8 @@ func (m Model) View() string {
 			categoryLine = categoryLine + strings.Repeat(" ", m.width-len(categoryLine))
 		}
 		lines = append(lines, theme.HighlightStyle.Width(m.width).Render(categoryLine))
+		separator := strings.Repeat("─", m.width)
+		lines = append(lines, theme.MutedTextStyle.Width(m.width).Render(separator))
 		currentIdx = m.renderAccountGroup(m.liabilities, currentIdx, &lines)
 	}
 
@@ -170,6 +175,8 @@ func (m Model) View() string {
 			categoryLine = categoryLine + strings.Repeat(" ", m.width-len(categoryLine))
 		}
 		lines = append(lines, theme.HighlightStyle.Width(m.width).Render(categoryLine))
+		separator := strings.Repeat("─", m.width)
+		lines = append(lines, theme.MutedTextStyle.Width(m.width).Render(separator))
 		currentIdx = m.renderAccountGroup(m.equity, currentIdx, &lines)
 	}
 
@@ -180,6 +187,8 @@ func (m Model) View() string {
 			categoryLine = categoryLine + strings.Repeat(" ", m.width-len(categoryLine))
 		}
 		lines = append(lines, theme.HighlightStyle.Width(m.width).Render(categoryLine))
+		separator := strings.Repeat("─", m.width)
+		lines = append(lines, theme.MutedTextStyle.Width(m.width).Render(separator))
 		currentIdx = m.renderAccountGroup(m.income, currentIdx, &lines)
 	}
 
@@ -190,6 +199,8 @@ func (m Model) View() string {
 			categoryLine = categoryLine + strings.Repeat(" ", m.width-len(categoryLine))
 		}
 		lines = append(lines, theme.HighlightStyle.Width(m.width).Render(categoryLine))
+		separator := strings.Repeat("─", m.width)
+		lines = append(lines, theme.MutedTextStyle.Width(m.width).Render(separator))
 		currentIdx = m.renderAccountGroup(m.expenses, currentIdx, &lines)
 	}
 
