@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/bubbles/key"
-	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/mmichie/lima/internal/beancount"
@@ -64,9 +63,11 @@ type Model struct {
 	width       int
 	height      int
 
-	// Native table component
-	table table.Model
-	keys  keyMap
+	// List state for manual rendering
+	cursor int
+	offset int
+
+	keys keyMap
 
 	// Category picker state
 	showingPicker      bool
@@ -79,112 +80,13 @@ type Model struct {
 
 // New creates a new transactions model
 func New(file *beancount.File, cat *categorizer.Categorizer) Model {
-	totalTransactions := file.TransactionCount()
-
-	// Define table columns
-	columns := []table.Column{
-		{Title: "Date", Width: 12},
-		{Title: "", Width: 1},
-		{Title: "Description", Width: 40},
-		{Title: "Account", Width: 45},
-		{Title: "Amount", Width: 15},
-	}
-
-	// Build rows from transactions (plain strings, colors applied via styles)
-	rows := []table.Row{}
-	for i := 0; i < totalTransactions; i++ {
-		tx, err := file.GetTransaction(i)
-		if err != nil {
-			continue
-		}
-
-		// Format transaction data as plain strings
-		dateStr := tx.Date.Format("2006-01-02")
-
-		// Flag
-		flagStr := tx.Flag
-
-		// Description
-		description := tx.Narration
-		if tx.Payee != "" {
-			description = tx.Payee
-		}
-		if len(description) > 40 {
-			description = description[:37] + "..."
-		}
-
-		// Account
-		account := ""
-		if len(tx.Postings) > 0 {
-			account = tx.Postings[0].Account
-			if len(account) > 45 {
-				account = "..." + account[len(account)-42:]
-			}
-		}
-
-		// Amount
-		amount := ""
-		if len(tx.Postings) > 0 && tx.Postings[0].Amount != nil {
-			amt := tx.Postings[0].Amount.Number.StringFixed(2)
-			commodity := tx.Postings[0].Amount.Commodity
-			amount = fmt.Sprintf("%s %s", amt, commodity)
-		}
-
-		rows = append(rows, table.Row{dateStr, flagStr, description, account, amount})
-	}
-
-	// Create table with TP7 styling and custom key bindings
-	t := table.New(
-		table.WithColumns(columns),
-		table.WithRows(rows),
-		table.WithFocused(true),
-		table.WithHeight(10),
-	)
-
-	// Configure vim-style key bindings for the table
-	t.KeyMap.LineUp.SetKeys("k", "up")
-	t.KeyMap.LineDown.SetKeys("j", "down")
-	t.KeyMap.PageUp.SetKeys("ctrl+u", "pgup")
-	t.KeyMap.PageDown.SetKeys("ctrl+d", "pgdown")
-	t.KeyMap.HalfPageUp.SetKeys("ctrl+b")
-	t.KeyMap.HalfPageDown.SetKeys("ctrl+f")
-	t.KeyMap.GotoTop.SetKeys("g", "home")
-	t.KeyMap.GotoBottom.SetKeys("G", "end")
-
-	// Apply TP7 table styles
-	s := table.DefaultStyles()
-
-	// Header style
-	s.Header = lipgloss.NewStyle().
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color(theme.TP7Cyan)).
-		BorderBottom(true).
-		Foreground(lipgloss.Color(theme.TP7Yellow)).
-		Background(lipgloss.Color(theme.TP7Blue)).
-		Bold(true)
-
-	// IMPORTANT: Selected row - black on cyan (TP7 inverted) - VERY OBVIOUS
-	s.Selected = lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#000000")).
-		Background(lipgloss.Color("#00FFFF")).
-		Bold(true)
-
-	// Normal cell - white text on blue background
-	s.Cell = lipgloss.NewStyle().
-		Foreground(lipgloss.Color(theme.TP7White)).
-		Background(lipgloss.Color(theme.TP7Blue))
-
-	t.SetStyles(s)
-
-	// Enable focus to show selection
-	t.Focus()
-
 	return Model{
 		file:              file,
 		categorizer:       cat,
-		table:             t,
+		cursor:            0,
+		offset:            0,
 		keys:              newKeyMap(),
-		totalTransactions: totalTransactions,
+		totalTransactions: file.TransactionCount(),
 		showingPicker:     false,
 		pickerCursor:      0,
 	}
@@ -197,8 +99,6 @@ func (m Model) Init() tea.Cmd {
 
 // Update handles messages
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var cmd tea.Cmd
-
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		// If category picker is showing, handle picker navigation
@@ -207,7 +107,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case "esc", "q":
 				m.showingPicker = false
 				m.pickerCursor = 0
-				m.table.Focus()
 				return m, nil
 
 			case "up", "k":
@@ -226,18 +125,48 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// TODO: Apply selected category to transaction
 				m.showingPicker = false
 				m.pickerCursor = 0
-				m.table.Focus()
 				return m, nil
 			}
 			return m, nil
 		}
 
-		// Handle enter key for categorization (only when NOT showing picker)
-		if msg.String() == "enter" {
+		// Handle navigation keys
+		switch {
+		case key.Matches(msg, m.keys.Up):
+			if m.cursor > 0 {
+				m.cursor--
+				// Adjust offset if cursor moves above visible area
+				if m.cursor < m.offset {
+					m.offset = m.cursor
+				}
+			}
+
+		case key.Matches(msg, m.keys.Down):
+			if m.cursor < m.totalTransactions-1 {
+				m.cursor++
+				// Adjust offset if cursor moves below visible area
+				visibleRows := m.height - 4 // Account for title and padding
+				if m.cursor >= m.offset+visibleRows {
+					m.offset = m.cursor - visibleRows + 1
+				}
+			}
+
+		case key.Matches(msg, m.keys.Top):
+			m.cursor = 0
+			m.offset = 0
+
+		case key.Matches(msg, m.keys.Bottom):
+			m.cursor = m.totalTransactions - 1
+			visibleRows := m.height - 4
+			m.offset = m.cursor - visibleRows + 1
+			if m.offset < 0 {
+				m.offset = 0
+			}
+
+		case key.Matches(msg, m.keys.Enter):
 			// Get categorization suggestions for current transaction
 			if m.categorizer != nil && m.totalTransactions > 0 {
-				cursor := m.table.Cursor()
-				tx, err := m.file.GetTransaction(cursor)
+				tx, err := m.file.GetTransaction(m.cursor)
 				if err == nil {
 					suggestions, err := m.categorizer.SuggestAll(tx)
 					if err == nil && len(suggestions) > 0 {
@@ -248,20 +177,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 				}
 			}
-			// If no suggestions, still consume the enter key
-			return m, nil
 		}
-
-		// Delegate all other keys to table (j/k/arrows/pgup/pgdn/home/end/g/G)
-		m.table, cmd = m.table.Update(msg)
-		m.table.Focus() // Ensure focus is maintained
-		return m, cmd
-
-	default:
-		// For non-key messages, still delegate to table
-		m.table, cmd = m.table.Update(msg)
-		return m, cmd
 	}
+
+	return m, nil
 }
 
 // View renders the transactions view
@@ -276,19 +195,97 @@ func (m Model) View() string {
 		return title + "\n" + theme.NormalTextStyle.Render("No transactions found")
 	}
 
+	var lines []string
+
 	// Title with count and cursor position
-	cursor := m.table.Cursor()
-	titleText := fmt.Sprintf("Transactions (%d total) - Row %d/%d", m.totalTransactions, cursor+1, m.totalTransactions)
+	titleText := fmt.Sprintf("Transactions (%d total) - Row %d/%d", m.totalTransactions, m.cursor+1, m.totalTransactions)
 	titlePadded := titleText
 	if m.width > len(titleText) {
 		titlePadded = titleText + strings.Repeat(" ", m.width-len(titleText))
 	}
 	title := theme.TitleStyle.Width(m.width).Render(titlePadded)
+	lines = append(lines, title)
+	lines = append(lines, "")
 
-	// Render table
-	tableView := m.table.View()
+	// Table header
+	headerLine := fmt.Sprintf("%-12s  %1s  %-40s  %-45s  %15s", "Date", "", "Description", "Account", "Amount")
+	if m.width > len(headerLine) {
+		headerLine = headerLine + strings.Repeat(" ", m.width-len(headerLine))
+	}
+	lines = append(lines, theme.TitleStyle.Width(m.width).Render(headerLine))
 
-	view := title + "\n\n" + tableView
+	// Separator
+	separator := strings.Repeat("─", m.width)
+	lines = append(lines, theme.MutedTextStyle.Width(m.width).Render(separator))
+
+	// Calculate visible range
+	visibleRows := m.height - 6 // Account for title, header, separator, padding
+	if visibleRows < 1 {
+		visibleRows = 1
+	}
+	end := m.offset + visibleRows
+	if end > m.totalTransactions {
+		end = m.totalTransactions
+	}
+
+	// Render visible transactions
+	for i := m.offset; i < end; i++ {
+		tx, err := m.file.GetTransaction(i)
+		if err != nil {
+			continue
+		}
+
+		// Format date
+		dateStr := tx.Date.Format("2006-01-02")
+
+		// Format flag
+		flagStr := tx.Flag
+
+		// Format description
+		description := tx.Narration
+		if tx.Payee != "" {
+			description = tx.Payee
+		}
+		if len(description) > 40 {
+			description = description[:37] + "..."
+		}
+
+		// Format account
+		account := ""
+		if len(tx.Postings) > 0 {
+			account = tx.Postings[0].Account
+			if len(account) > 45 {
+				account = "..." + account[len(account)-42:]
+			}
+		}
+
+		// Format amount
+		amount := ""
+		if len(tx.Postings) > 0 && tx.Postings[0].Amount != nil {
+			amt := tx.Postings[0].Amount.Number.StringFixed(2)
+			commodity := tx.Postings[0].Amount.Commodity
+			amount = fmt.Sprintf("%s %s", amt, commodity)
+		}
+
+		// Build the row line
+		line := fmt.Sprintf("%-12s  %1s  %-40s  %-45s  %15s", dateStr, flagStr, description, account, amount)
+
+		// Pad to full width
+		if m.width > len(line) {
+			line = line + strings.Repeat(" ", m.width-len(line))
+		}
+
+		// Apply highlighting for selected row
+		if i == m.cursor {
+			line = theme.SelectedItemStyle.Width(m.width).Render(line)
+		} else {
+			line = theme.ListItemStyle.Width(m.width).Render(line)
+		}
+
+		lines = append(lines, line)
+	}
+
+	view := strings.Join(lines, "\n")
 
 	// Show category picker overlay if active
 	if m.showingPicker {
@@ -302,14 +299,6 @@ func (m Model) View() string {
 func (m Model) SetSize(width, height int) Model {
 	m.width = width
 	m.height = height
-
-	// Update table height (account for title and padding)
-	tableHeight := height - 4
-	if tableHeight < 5 {
-		tableHeight = 5
-	}
-	m.table.SetHeight(tableHeight)
-
 	return m
 }
 
