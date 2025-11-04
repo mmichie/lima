@@ -185,19 +185,18 @@ func renderMenuWithHotkey(label string, hotkey rune, active bool) string {
 
 	for i, ch := range label {
 		if i == hotkeyIndex {
-			// Render hotkey with special style
-			hotkeyStyle := theme.MenuHotkeyStyle
+			// Render hotkey with special style (underlined)
 			if active {
-				// When menu is active, bright white on black background
-				hotkeyStyle = lipgloss.NewStyle().
+				// When menu is active, white on black background
+				hotkeyStyle := lipgloss.NewStyle().
 					Foreground(lipgloss.Color(theme.TP7White)).
-					Background(lipgloss.Color(theme.TP7Black)).
-					Underline(true).
-					Bold(true)
+					Background(lipgloss.Color(theme.TP7Black))
+				result.WriteString(hotkeyStyle.Render(string(ch)))
 			} else {
-				hotkeyStyle = hotkeyStyle.Underline(true)
+				// Normal: black text on light gray, underlined
+				hotkeyStyle := theme.MenuHotkeyStyle.Underline(true)
+				result.WriteString(hotkeyStyle.Render(string(ch)))
 			}
-			result.WriteString(hotkeyStyle.Render(string(ch)))
 		} else {
 			result.WriteString(baseStyle.Render(string(ch)))
 		}
